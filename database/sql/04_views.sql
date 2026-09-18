@@ -205,7 +205,7 @@ WITH activity_schedule_bounds AS (
     GROUP BY scenario, activity_id
 )
 SELECT 
-    succ.scenario,
+    succ_sched.scenario AS scenario,
     succ.activity_id AS successor_activity_id,
     succ.contract_number AS successor_contract,
     succ_sched.first_scheduled_week AS successor_first_week,

@@ -230,5 +230,64 @@ export async function flushDatabaseRecords() {
   memStations = [];
   memSectors = [];
   memSupply = [];
+  memBufferRules = [];
+  memParameters = [];
   return { success: true, message: "Database records successfully flushed." };
+}
+
+export async function ingestDatabaseRecords(table: string, records: any[]) {
+  if (table === "activities") {
+    memActivities = records;
+  } else if (table === "contracts") {
+    memContracts = records;
+  } else if (table === "lines") {
+    memLines = records;
+  } else if (table === "stations") {
+    memStations = records;
+  } else if (table === "sectors") {
+    memSectors = records;
+  } else if (table === "locationSupply") {
+    memSupply = records;
+  } else if (table === "bufferRules") {
+    memBufferRules = records;
+  } else if (table === "parameters") {
+    memParameters = records;
+  }
+
+  return {
+    success: true,
+    table,
+    count: records.length,
+    message: `Successfully ingested ${records.length} records into table: ${table}`,
+  };
+}
+
+export async function loadPresetDataset(presetName: string, stateData?: any) {
+  if (stateData) {
+    if (stateData.lines) memLines = stateData.lines;
+    if (stateData.stations) memStations = stateData.stations;
+    if (stateData.sectors) memSectors = stateData.sectors;
+    if (stateData.locationSupply) memSupply = stateData.locationSupply;
+    if (stateData.bufferRules) memBufferRules = stateData.bufferRules;
+    if (stateData.parameters) memParameters = stateData.parameters;
+    if (stateData.contracts) memContracts = stateData.contracts;
+    if (stateData.activities) memActivities = stateData.activities;
+  } else {
+    // Reset to baseline default
+    memLines = [...INITIAL_LINES];
+    memStations = [...INITIAL_STATIONS];
+    memSectors = [...INITIAL_SECTORS];
+    memSupply = [...INITIAL_LOCATION_SUPPLY];
+    memBufferRules = [...INITIAL_BUFFER_RULES];
+    memParameters = [...INITIAL_PARAMETERS];
+    memContracts = [...INITIAL_CONTRACTS];
+    memActivities = [...INITIAL_ACTIVITIES];
+  }
+
+  return {
+    success: true,
+    dataset: presetName,
+    activities_count: memActivities.length,
+    stations_count: memStations.length,
+  };
 }

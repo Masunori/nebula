@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { X, PlusCircle, Train, ShieldCheck, ShieldAlert, Sparkles, Navigation } from "lucide-react";
+import { X, PlusCircle, Train, ShieldCheck, ShieldAlert, Sparkles, Navigation, Zap } from "lucide-react";
 import type { Activity, Contract, Station, BufferRule, TrackBound } from "@/lib/types";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 
 interface EntryCreationDrawerProps {
   isOpen: boolean;
@@ -55,6 +56,16 @@ export function EntryCreationDrawer({
     );
   }, [bufferRules, natureOfWorks]);
 
+  // Check if track reaches interchange H01 or H02
+  const touchesInterchange = useMemo(() => {
+    return (
+      stationFrom.includes("H01") ||
+      stationFrom.includes("H02") ||
+      stationTo.includes("H01") ||
+      stationTo.includes("H02")
+    );
+  }, [stationFrom, stationTo]);
+
   // Handle line change
   const handleLineChange = (newLine: string) => {
     setLineCode(newLine);
@@ -90,42 +101,79 @@ export function EntryCreationDrawer({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex justify-end animate-in fade-in">
-      <div className="w-full max-w-lg bg-slate-900 border-l border-slate-800 h-full overflow-y-auto flex flex-col justify-between p-6 shadow-2xl">
+    <div className="dialog-backdrop" onClick={onClose} style={{ justifyContent: "flex-end", alignItems: "stretch", padding: 0 }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 500,
+          backgroundColor: "var(--bg-surface)",
+          borderLeft: "1px solid var(--border-default)",
+          height: "100%",
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: 24,
+          boxShadow: "var(--shadow-xl)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div>
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div className="flex items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border-default)" }}>
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                <PlusCircle className="w-5 h-5" />
+              <div
+                style={{
+                  padding: 6,
+                  borderRadius: "var(--radius-md)",
+                  backgroundColor: "var(--teal-50)",
+                  border: "1px solid var(--border-teal)",
+                  color: "var(--teal-700)",
+                }}
+              >
+                <PlusCircle size={20} />
               </div>
               <div>
-                <h2 className="text-base font-bold text-white">Create Database Workload Entry</h2>
-                <p className="text-xs text-slate-400">
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink-900)" }}>Create Workload Entry</h2>
+                <p style={{ fontSize: 12, color: "var(--ink-500)", marginTop: 2 }}>
                   Add urgent maintenance or renewal activity with safety envelope validation
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+              className="btn btn--ghost btn--icon"
+              aria-label="Close drawer"
             >
-              <X className="w-5 h-5" />
+              <X size={18} />
             </button>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4 pt-4 text-xs">
             {/* Quick Priority Callout for Maintainers */}
-            <div className="p-3 rounded-lg bg-cyan-950/40 border border-cyan-800/60 text-cyan-200 space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-[11px] text-cyan-300">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Maintainer Fast Track: Priority 1 (Urgent Maintenance)</span>
+            <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/50 text-rose-200 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-[11px] text-rose-300">
+                <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                <span>Maintainer Fast-Track (Priority 1)</span>
               </div>
               <p className="text-[11px] text-slate-300">
-                Setting Priority 1 ensures the optimization engine schedules this task before commercial renewal jobs.
+                In-house track maintenance possesses the track first. Priority 1 reservations take operational precedence over commercial contracts.
               </p>
             </div>
+
+            {/* Interchange Crossover Alert */}
+            {touchesInterchange && natureOfWorks === "Live" && (
+              <div className="p-3 rounded-lg bg-purple-950/40 border border-purple-800/80 text-purple-200 space-y-1 animate-pulse">
+                <div className="flex items-center gap-1.5 font-bold text-[11px] text-purple-300">
+                  <Zap className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Dual-Line Interchange Crossover Notice</span>
+                </div>
+                <p className="text-[11px] text-purple-200">
+                  Performing 750V Live Rail work across H01/H02 isolates traction power for <strong>both Line Alpha and Line Beta</strong> tunnels simultaneously.
+                </p>
+              </div>
+            )}
 
             {/* Activity ID & Contract */}
             <div className="grid grid-cols-2 gap-3">
@@ -292,38 +340,47 @@ export function EntryCreationDrawer({
             </div>
 
             {/* Calculated Safety Footprint Preview */}
-            <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">
+            <div
+              style={{
+                padding: 12,
+                borderRadius: "var(--radius-md)",
+                backgroundColor: "var(--bg-muted)",
+                border: "1px solid var(--border-default)",
+              }}
+              className="space-y-2"
+            >
+              <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: "var(--ink-500)", display: "block" }}>
                 Calculated Safety Footprint
               </span>
-              <div className="flex items-center justify-between text-slate-300 font-mono text-[11px]">
+              <div className="flex items-center justify-between font-mono text-[11px]" style={{ color: "var(--ink-700)" }}>
                 <span>Buffer Margin:</span>
-                <span className="text-amber-400 font-bold">
+                <span style={{ color: "var(--orange-500)", fontWeight: 700 }}>
                   {activeBufferRule.buffer_sectors} Sector(s) ({activeBufferRule.buffer_sectors * 1000}m)
                 </span>
               </div>
-              <div className="flex items-center justify-between text-slate-300 font-mono text-[11px]">
+              <div className="flex items-center justify-between font-mono text-[11px]" style={{ color: "var(--ink-700)" }}>
                 <span>Opposite Track Isolation:</span>
-                <span className={activeBufferRule.requires_opposite_bound ? "text-rose-400 font-bold" : "text-emerald-400"}>
-                  {activeBufferRule.requires_opposite_bound ? "Enforced (Live Track)" : "Not Required"}
+                <span style={{ color: activeBufferRule.requires_opposite_bound ? "var(--status-red)" : "var(--status-green)", fontWeight: 700 }}>
+                  {activeBufferRule.requires_opposite_bound ? "Enforced (750V Live Rail Cutoff)" : "Not Required"}
                 </span>
               </div>
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t" style={{ borderColor: "var(--border-default)" }}>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium cursor-pointer"
+                className="btn btn--secondary"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium flex items-center gap-2 shadow-sm shadow-cyan-900/50 cursor-pointer"
+                className="btn btn--primary"
+                style={{ gap: 6 }}
               >
-                <PlusCircle className="w-4 h-4" />
+                <PlusCircle size={16} />
                 <span>Stage Activity to Draft</span>
               </button>
             </div>

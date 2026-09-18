@@ -24,9 +24,17 @@ export default function DashboardPage() {
           <h1 className="page-title">Planning Runs</h1>
           <p className="page-subtitle">Line Alpha · Line Beta · Horizon CW01–CW30 2027</p>
         </div>
-        <Link href="/upload">
-          <Button variant="primary" leftIcon={<Plus size={16} />}>New planning run</Button>
-        </Link>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Link href="/schedule">
+            <Button variant="secondary">View Master Schedule</Button>
+          </Link>
+          <Link href="/database">
+            <Button variant="secondary">Database Studio</Button>
+          </Link>
+          <Link href="/upload">
+            <Button variant="primary" leftIcon={<Plus size={16} />}>New planning run</Button>
+          </Link>
+        </div>
       </div>
       <OperationalSummary runs={runs} />
       <RunsTable runs={runs} loading={loading} />

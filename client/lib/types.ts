@@ -1,4 +1,5 @@
 export type TrackBound = "EB" | "WB";
+export type PersonaMode = "ALL" | "MAINTAINER" | "PLANNER" | "AUDITOR";
 
 export interface Line {
   line_code: string;

@@ -1,58 +1,117 @@
 "use client";
 
 import React, { useState } from "react";
-import { GitBranch, ShieldCheck, ShieldAlert, ArrowRight, Filter, AlertTriangle } from "lucide-react";
+import {
+  GitBranch,
+  ShieldCheck,
+  ShieldAlert,
+  ArrowRight,
+  Filter,
+  AlertTriangle,
+  Scissors,
+  CheckCircle2,
+} from "lucide-react";
 import type { DAGReport, Activity } from "@/lib/types";
+import { DESIGN_TOKENS } from "@/lib/design-tokens";
 
 interface DependencyDAGViewerProps {
   dagReport: DAGReport;
   activities: Activity[];
   onSelectActivity?: (id: string) => void;
+  onBreakCycle?: (cycleNodes: string[]) => void;
 }
 
 export function DependencyDAGViewer({
   dagReport,
   activities,
   onSelectActivity,
+  onBreakCycle,
 }: DependencyDAGViewerProps) {
   const [selectedContract, setSelectedContract] = useState<string>("ALL");
+  const [filterMode, setFilterMode] = useState<"ALL" | "DEPENDENT" | "ROOT">("ALL");
 
   const contracts = Array.from(new Set(activities.map((a) => a.contract_number))).sort();
 
-  const filteredNodes = dagReport.nodes.filter(
-    (n) => selectedContract === "ALL" || n.contract_number === selectedContract
-  );
+  const filteredNodes = dagReport.nodes.filter((n) => {
+    const matchesContract = selectedContract === "ALL" || n.contract_number === selectedContract;
+    const incoming = dagReport.edges.filter((e) => e.to === n.id);
+    const outgoing = dagReport.edges.filter((e) => e.from === n.id);
 
-  const filteredNodeIds = new Set(filteredNodes.map((n) => n.id));
+    let matchesFilter = true;
+    if (filterMode === "DEPENDENT") matchesFilter = incoming.length > 0 || outgoing.length > 0;
+    else if (filterMode === "ROOT") matchesFilter = incoming.length === 0;
 
-  const filteredEdges = dagReport.edges.filter(
-    (e) => filteredNodeIds.has(e.from) || filteredNodeIds.has(e.to)
-  );
+    return matchesContract && matchesFilter;
+  });
 
   return (
     <div className="space-y-4">
       {/* Header and Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+      <div
+        className="section"
+        style={{
+          padding: "12px 16px",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
-            <GitBranch className="w-4 h-4" />
+          <div
+            style={{
+              padding: 6,
+              borderRadius: "var(--radius-md)",
+              backgroundColor: "var(--teal-50)",
+              border: "1px solid var(--border-teal)",
+              color: "var(--teal-700)",
+            }}
+          >
+            <GitBranch size={18} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-white">Predecessor DAG Dependency Structure</h2>
-            <p className="text-xs text-slate-400">
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--ink-900)" }}>Predecessor DAG Dependency Structure</h2>
+            <p style={{ fontSize: 12, color: "var(--ink-500)" }}>
               Structural precedence constraints ($FS+0$) and real-time circular dependency cycle audit
             </p>
           </div>
         </div>
 
-        {/* Contract Filter */}
-        <div className="flex items-center gap-2">
-          <Filter className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-xs text-slate-400">Filter Contract:</span>
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Quick filter chips */}
+          <div className="seg-control">
+            <button
+              onClick={() => setFilterMode("ALL")}
+              className={`seg-btn${filterMode === "ALL" ? " active" : ""}`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilterMode("DEPENDENT")}
+              className={`seg-btn${filterMode === "DEPENDENT" ? " active" : ""}`}
+            >
+              In Chains
+            </button>
+            <button
+              onClick={() => setFilterMode("ROOT")}
+              className={`seg-btn${filterMode === "ROOT" ? " active" : ""}`}
+            >
+              Roots
+            </button>
+          </div>
+
+          {/* Contract Filter */}
           <select
             value={selectedContract}
             onChange={(e) => setSelectedContract(e.target.value)}
-            className="px-2.5 py-1 text-xs rounded-lg bg-slate-800 border border-slate-700 text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+            className="px-2.5 py-1 text-xs rounded-md font-mono cursor-pointer"
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              border: "1px solid var(--border-default)",
+              color: "var(--ink-900)",
+            }}
           >
             <option value="ALL">All Contracts ({contracts.length})</option>
             {contracts.map((c) => (
@@ -66,19 +125,32 @@ export function DependencyDAGViewer({
 
       {/* Cycle Detection Alert Banner */}
       {dagReport.has_cycles ? (
-        <div className="p-4 rounded-xl bg-rose-950/50 border border-rose-800/80 text-rose-200 space-y-2 animate-in fade-in">
-          <div className="flex items-center gap-2 text-sm font-bold text-rose-300">
-            <ShieldAlert className="w-5 h-5 text-rose-400 animate-pulse" />
-            <span>CRITICAL ERROR: Circular Predecessor Dependency Detected! ({dagReport.cycle_count} cycles)</span>
+        <div className="p-4 rounded-xl bg-rose-950/60 border border-rose-800/80 text-rose-200 space-y-3 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-bold text-rose-300">
+              <ShieldAlert className="w-5 h-5 text-rose-400 animate-pulse" />
+              <span>CRITICAL ERROR: Circular Predecessor Dependency Detected! ({dagReport.cycle_count} cycle(s))</span>
+            </div>
+            {onBreakCycle && (
+              <button
+                onClick={() => onBreakCycle(dagReport.cycles[0])}
+                className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-rose-950 transition-colors cursor-pointer"
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                <span>Auto-Break Cycle</span>
+              </button>
+            )}
           </div>
           <p className="text-xs text-rose-300">
-            The optimization engine requires a strict Directed Acyclic Graph (DAG). Circular loops make the schedule mathematically infeasible.
+            The optimization engine requires a strict Directed Acyclic Graph (DAG). Predecessor cycles make scheduling mathematically impossible.
           </p>
-          <div className="p-3 bg-rose-950/80 rounded-lg border border-rose-900 font-mono text-xs space-y-1">
+          <div className="p-3 bg-rose-950/90 rounded-lg border border-rose-900 font-mono text-xs space-y-1.5">
             {dagReport.cycles.map((cycle, idx) => (
               <div key={idx} className="flex items-center gap-2 text-rose-200 font-semibold">
                 <span className="text-rose-400">Cycle #{idx + 1}:</span>
-                <span>{cycle.join(" → ")}</span>
+                <span className="bg-rose-900/60 px-2 py-0.5 rounded border border-rose-700/60">
+                  {cycle.join(" ➔ ")}
+                </span>
               </div>
             ))}
           </div>
@@ -98,7 +170,7 @@ export function DependencyDAGViewer({
       )}
 
       {/* Dependency Visual Tree / Node Cards */}
-      <div className="bg-slate-900/80 rounded-xl border border-slate-800 p-5 space-y-4 max-h-[500px] overflow-y-auto">
+      <div className="section" style={{ padding: 16, maxHeight: 520, overflowY: "auto" }}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredNodes.map((node) => {
             const incoming = dagReport.edges.filter((e) => e.to === node.id);
@@ -109,27 +181,31 @@ export function DependencyDAGViewer({
               <div
                 key={node.id}
                 onClick={() => onSelectActivity && onSelectActivity(node.id)}
-                className={`p-3.5 rounded-lg border transition-all cursor-pointer ${
-                  isCycleNode
-                    ? "bg-rose-950/40 border-rose-600 shadow-md shadow-rose-950 text-rose-100 ring-1 ring-rose-500"
-                    : "bg-slate-800/80 border-slate-700 hover:border-cyan-500 hover:bg-slate-800 text-slate-200"
-                }`}
+                className="cursor-pointer"
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: "var(--radius-md)",
+                  border: isCycleNode ? "2px solid var(--status-red)" : "1px solid var(--border-default)",
+                  backgroundColor: isCycleNode ? "rgba(225, 29, 72, 0.08)" : "var(--bg-surface)",
+                  boxShadow: "var(--shadow-xs)",
+                  transition: "all 0.15s ease",
+                }}
               >
                 {/* Node Header */}
-                <div className="flex items-center justify-between pb-2 border-b border-slate-700/60">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono font-bold text-xs text-white">{node.id}</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-900 border border-slate-700 text-slate-400">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 8, borderBottom: "1px solid var(--border-default)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span className="font-mono font-bold text-xs" style={{ color: "var(--ink-900)" }}>{node.id}</span>
+                    <span className="chip chip--contract font-mono text-[10px]">
                       {node.contract_number}
                     </span>
                   </div>
                   <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold font-mono ${
+                    className={`badge font-mono text-[10px] ${
                       node.priority === 1
-                        ? "bg-rose-900/50 text-rose-300 border border-rose-700"
+                        ? "badge--invalid"
                         : node.priority === 2
-                        ? "bg-cyan-900/50 text-cyan-300 border border-cyan-700"
-                        : "bg-slate-700 text-slate-300"
+                        ? "badge--pending"
+                        : "badge--neutral"
                     }`}
                   >
                     Priority {node.priority}
@@ -154,7 +230,7 @@ export function DependencyDAGViewer({
                 <div className="pt-2 border-t border-slate-700/60 text-[11px] font-mono flex items-center justify-between">
                   <div>
                     {incoming.length > 0 ? (
-                      <span className="text-amber-400 flex items-center gap-1">
+                      <span className="text-amber-400 flex items-center gap-1 font-semibold">
                         Predecessor: {incoming.map((e) => e.from).join(", ")}
                       </span>
                     ) : (
@@ -163,7 +239,7 @@ export function DependencyDAGViewer({
                   </div>
                   <div>
                     {outgoing.length > 0 && (
-                      <span className="text-purple-400 flex items-center gap-1">
+                      <span className="text-purple-400 flex items-center gap-1 font-semibold">
                         Unlocks ({outgoing.length}) <ArrowRight className="w-3 h-3" />
                       </span>
                     )}

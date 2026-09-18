@@ -200,7 +200,7 @@ function parseLocation(locationId: string): { lineCode: LineCode; bound: Bound }
 
 // ─── Raw access schedule (from sample SCHEDULE_ACCESS.csv) ───────────────────
 
-interface RawAccess {
+export interface RawAccess {
   activityId: string;
   accessSeq: number;
   week: number;
@@ -208,7 +208,7 @@ interface RawAccess {
   accessNight: number;
 }
 
-const RAW_ACCESSES: RawAccess[] = [
+export const RAW_ACCESSES: RawAccess[] = [
   { activityId:'A001', accessSeq:1,  week:22, eclo:false, accessNight:3 },
   { activityId:'A001', accessSeq:2,  week:23, eclo:false, accessNight:3 },
   { activityId:'A002', accessSeq:1,  week:18, eclo:false, accessNight:1 },
@@ -763,3 +763,18 @@ export function buildComparisonResult(runId: string): ComparisonResult {
     conflictPublishedBy: runId === 'run-002' ? 'James Osei' : null,
   };
 }
+
+// ─── Activity access query helpers ──────────────────────────────────────────
+
+export function getActivityAccessWeeks(activityId: string): number[] {
+  return RAW_ACCESSES.filter(a => a.activityId === activityId).map(a => a.week).sort((a, b) => a - b);
+}
+
+export function getActivityAccessSummary(activityId: string): string | null {
+  const weeks = getActivityAccessWeeks(activityId);
+  if (weeks.length === 0) return null;
+  const cwList = weeks.map(w => `CW${String(w).padStart(2, '0')}`);
+  if (weeks.length === 1) return cwList[0];
+  return `${cwList[0]}–${cwList[cwList.length - 1]} (${weeks.length}w)`;
+}
+

@@ -9,8 +9,10 @@ export function AppNav() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const linkClass = (href: string) =>
-    'nav-link' + (pathname === href || (href !== '/' && pathname?.startsWith(href)) ? ' active' : '');
+  const linkClass = (href: string) => {
+    const isActive = href === '/' ? pathname === '/' : pathname?.startsWith(href);
+    return 'nav-link' + (isActive ? ' active' : '');
+  };
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('railsync-theme');
@@ -34,7 +36,9 @@ export function AppNav() {
         </Link>
         <nav className="nav-links">
           <Link href="/" className={linkClass('/')}>Dashboard</Link>
-          <Link href="/upload" className={linkClass('/upload')}>Upload</Link>
+          <Link href="/schedule" className={linkClass('/schedule')}>Schedule</Link>
+          <Link href="/database" className={linkClass('/database')}>Database Studio</Link>
+          <Link href="/upload" className={linkClass('/upload')}>Upload & Optimize</Link>
         </nav>
         <div className="nav-right">
           <div className="nav-status" aria-label="Current planning status">
@@ -63,7 +67,9 @@ export function AppNav() {
       </header>
       <div className={'nav-mobile-menu' + (mobileOpen ? ' open' : '')} role="navigation" aria-label="Mobile navigation">
         <Link href="/" className={linkClass('/')} onClick={() => setMobileOpen(false)}>Dashboard</Link>
-        <Link href="/upload" className={linkClass('/upload')} onClick={() => setMobileOpen(false)}>Upload</Link>
+        <Link href="/schedule" className={linkClass('/schedule')} onClick={() => setMobileOpen(false)}>Schedule</Link>
+        <Link href="/database" className={linkClass('/database')} onClick={() => setMobileOpen(false)}>Database Studio</Link>
+        <Link href="/upload" className={linkClass('/upload')} onClick={() => setMobileOpen(false)}>Upload & Optimize</Link>
       </div>
     </>
   );

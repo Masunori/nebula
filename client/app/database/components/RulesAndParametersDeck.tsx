@@ -48,27 +48,41 @@ export function RulesAndParametersDeck({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* 1. Safety Buffer Rules Control Deck */}
-      <div className="bg-slate-900/80 rounded-xl border border-slate-800 p-5 space-y-4">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800">
-          <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <Sliders className="w-4 h-4" />
+      <div className="section" style={{ padding: 20 }}>
+        <div className="flex items-center gap-2.5 pb-3 border-b" style={{ borderColor: "var(--border-default)" }}>
+          <div
+            style={{
+              padding: 6,
+              borderRadius: "var(--radius-md)",
+              backgroundColor: "var(--teal-50)",
+              border: "1px solid var(--border-teal)",
+              color: "var(--teal-700)",
+            }}
+          >
+            <Sliders size={18} />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">Spatial Safety Buffer Policies</h3>
-            <p className="text-xs text-slate-400">
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--ink-900)" }}>Spatial Safety Buffer Policies</h3>
+            <p style={{ fontSize: 12, color: "var(--ink-500)" }}>
               Sector protection radii and opposing bound isolation rules per work classification
             </p>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 pt-4">
           {bufferRules.map((rule) => {
             const isLive = rule.nature_of_works.toLowerCase().includes("live") && !rule.nature_of_works.toLowerCase().includes("non-live");
 
             return (
               <div
                 key={rule.nature_of_works}
-                className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3"
+                style={{
+                  padding: 14,
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-default)",
+                  backgroundColor: "var(--bg-surface)",
+                }}
+                className="space-y-3"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -150,23 +164,39 @@ export function RulesAndParametersDeck({
       </div>
 
       {/* 2. System Calendar & Horizon Settings */}
-      <div className="bg-slate-900/80 rounded-xl border border-slate-800 p-5 space-y-4">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800">
-          <div className="p-1.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-            <Calendar className="w-4 h-4" />
+      <div className="section" style={{ padding: 20 }}>
+        <div className="flex items-center gap-2.5 pb-3 border-b" style={{ borderColor: "var(--border-default)" }}>
+          <div
+            style={{
+              padding: 6,
+              borderRadius: "var(--radius-md)",
+              backgroundColor: "var(--teal-50)",
+              border: "1px solid var(--border-teal)",
+              color: "var(--teal-700)",
+            }}
+          >
+            <Calendar size={18} />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">System Calendar & Horizon Parameters</h3>
-            <p className="text-xs text-slate-400">
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--ink-900)" }}>System Calendar & Horizon Parameters</h3>
+            <p style={{ fontSize: 12, color: "var(--ink-500)" }}>
               Macro planning time horizon parameters controlling schedule bounds and penalties
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSaveParameters} className="space-y-4">
+        <form onSubmit={handleSaveParameters} className="space-y-4 pt-4">
           {/* Horizon Weeks Input */}
-          <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-            <label className="text-xs font-semibold text-slate-200 block">
+          <div
+            style={{
+              padding: 14,
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--bg-surface)",
+            }}
+            className="space-y-2"
+          >
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-900)" }} className="block">
               Operational Horizon Window (Weeks):
             </label>
             <input
@@ -175,57 +205,94 @@ export function RulesAndParametersDeck({
               max={52}
               value={weeks}
               onChange={(e) => setWeeks(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-cyan-300 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-default)",
+                backgroundColor: "var(--bg-page)",
+                color: "var(--ink-900)",
+                fontFamily: "monospace",
+                fontSize: 13,
+              }}
             />
-            <p className="text-[11px] text-slate-400">
+            <p style={{ fontSize: 11, color: "var(--ink-500)" }}>
               Official competition default is 30 weeks. Solver optimizes possession nights across this range.
             </p>
           </div>
 
           {/* Horizon Start Date */}
-          <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-            <label className="text-xs font-semibold text-slate-200 block">
+          <div
+            style={{
+              padding: 14,
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--bg-surface)",
+            }}
+            className="space-y-2"
+          >
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-900)" }} className="block">
               Calendar Horizon Start Date (Week 1 Monday):
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-cyan-300 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-default)",
+                backgroundColor: "var(--bg-page)",
+                color: "var(--ink-900)",
+                fontFamily: "monospace",
+                fontSize: 13,
+              }}
             />
-            <p className="text-[11px] text-slate-400">
+            <p style={{ fontSize: 11, color: "var(--ink-500)" }}>
               Start date for Week 1 Day 1 (Monday night possession).
             </p>
           </div>
 
           {/* Calendar Calculated Summary */}
-          <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800 text-xs space-y-2 font-mono">
-            <div className="flex justify-between text-slate-400">
+          <div
+            style={{
+              padding: 14,
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--bg-muted)",
+              fontSize: 12,
+              fontFamily: "monospace",
+            }}
+            className="space-y-2"
+          >
+            <div className="flex justify-between" style={{ color: "var(--ink-500)" }}>
               <span>Horizon Start:</span>
-              <span className="text-white font-bold">{startDate} (W01 D1)</span>
+              <strong style={{ color: "var(--ink-900)" }}>{startDate} (W01 D1)</strong>
             </div>
-            <div className="flex justify-between text-slate-400">
+            <div className="flex justify-between" style={{ color: "var(--ink-500)" }}>
               <span>Horizon End:</span>
-              <span className="text-white font-bold">{endDate} (W{weeks.padStart(2, "0")} D7)</span>
+              <strong style={{ color: "var(--ink-900)" }}>{endDate} (W{weeks.padStart(2, "0")} D7)</strong>
             </div>
-            <div className="flex justify-between text-slate-400 border-t border-slate-800/80 pt-2">
+            <div className="flex justify-between pt-2 border-t" style={{ borderColor: "var(--border-default)", color: "var(--ink-500)" }}>
               <span>Total Available Nights:</span>
-              <span className="text-cyan-400 font-bold">{(parseInt(weeks, 10) || 30) * 7} calendar days</span>
+              <strong style={{ color: "var(--teal-700)" }}>{(parseInt(weeks, 10) || 30) * 7} calendar days</strong>
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs flex items-center justify-center gap-2 shadow-sm shadow-cyan-900/50 transition-colors cursor-pointer"
+            className="btn btn--primary"
+            style={{ width: "100%", justifyContent: "center", gap: 8 }}
           >
             {paramSaved ? (
               <>
-                <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                <CheckCircle2 size={16} />
                 <span>Parameters Staged Successfully!</span>
               </>
             ) : (
               <>
-                <Save className="w-4 h-4" />
+                <Save size={16} />
                 <span>Stage Parameter Updates</span>
               </>
             )}

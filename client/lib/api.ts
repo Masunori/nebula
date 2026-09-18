@@ -7,7 +7,11 @@ import {
   buildValidationResult,
   buildComparisonResult,
   buildScheduleDownloads,
+  getActivityAccessWeeks,
+  getActivityAccessSummary,
 } from './mockPlanningData';
+
+export { getActivityAccessWeeks, getActivityAccessSummary };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 

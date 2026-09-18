@@ -18,6 +18,7 @@ import type {
   StagedChange,
   ValidationReport,
   TrackBound,
+  PersonaMode,
 } from "./types";
 
 import {
@@ -30,6 +31,7 @@ import {
   INITIAL_CONTRACTS,
   INITIAL_ACTIVITIES,
 } from "./initial-data";
+import { getPresetDatasetState, parseRailwayCSV } from "./csv-parser";
 
 export interface DatabaseState {
   lines: Line[];
@@ -61,6 +63,8 @@ export function useDatabaseStore() {
   const [selectedLineCode, setSelectedLineCode] = useState<string>("ALL");
   const [selectedTrackBound, setSelectedTrackBound] = useState<TrackBound>("EB");
   const [activeTab, setActiveTab] = useState<"topology" | "activities" | "dag" | "parameters" | "operations">("topology");
+  const [personaMode, setPersonaMode] = useState<PersonaMode>("ALL");
+  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
 
   // 1. Dynamic Coordinate Map: Map (station_id, line_code) -> seq_coord (1..19)
   const stationCoordMap = useMemo(() => {
@@ -358,7 +362,7 @@ export function useDatabaseStore() {
     setStagedChanges([]);
   }, []);
 
-  // Flush database completely
+  // Flush database completely (empties state and server records)
   const flushDatabase = useCallback(async () => {
     try {
       await fetch("/api/database/flush", { method: "POST" });
@@ -378,6 +382,73 @@ export function useDatabaseStore() {
     });
     setStagedChanges([]);
   }, []);
+
+  // Load preset dataset (Default, Tier 1, Tier 2, Tier 3)
+  const loadPresetDataset = useCallback(async (preset: "DEFAULT" | "TIER_1" | "TIER_2" | "TIER_3") => {
+    const newState = getPresetDatasetState(preset);
+    setState(newState);
+    setStagedChanges([]);
+    try {
+      await fetch("/api/database/load", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preset, stateData: newState }),
+      });
+    } catch (e) {
+      console.warn("API load error, memory fallback applied:", e);
+    }
+  }, []);
+
+  // Parse and ingest real CSV files from user drag-drop or file picker
+  const parseAndIngestCsvFiles = useCallback(
+    async (files: FileList | File[]): Promise<{ count: number; tables: string[]; errors: string[] }> => {
+      const fileArray = Array.from(files);
+      let totalUpdated = 0;
+      const updatedTables: string[] = [];
+      const errors: string[] = [];
+
+      for (const file of fileArray) {
+        try {
+          const text = await file.text();
+          const parsed = parseRailwayCSV(file.name, text);
+          if (parsed.error || parsed.table === "unknown") {
+            errors.push(parsed.error || `Could not parse ${file.name}`);
+            continue;
+          }
+
+          // Update local state dynamically
+          setState((prev) => {
+            const next = { ...prev };
+            if (parsed.table === "activities") next.activities = parsed.records;
+            else if (parsed.table === "contracts") next.contracts = parsed.records;
+            else if (parsed.table === "lines") next.lines = parsed.records;
+            else if (parsed.table === "stations") next.stations = parsed.records;
+            else if (parsed.table === "sectors") next.sectors = parsed.records;
+            else if (parsed.table === "locationSupply") next.locationSupply = parsed.records;
+            else if (parsed.table === "bufferRules") next.bufferRules = parsed.records;
+            else if (parsed.table === "parameters") next.parameters = parsed.records;
+            next.datasetName = `Custom Ingestion (${file.name})`;
+            return next;
+          });
+
+          // Persist to API
+          await fetch("/api/database/ingest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ table: parsed.table, records: parsed.records }),
+          });
+
+          totalUpdated += parsed.records.length;
+          updatedTables.push(`${parsed.table} (${parsed.records.length})`);
+        } catch (err: any) {
+          errors.push(`Error reading ${file.name}: ${err.message}`);
+        }
+      }
+
+      return { count: totalUpdated, tables: updatedTables, errors };
+    },
+    []
+  );
 
   // Dry-run validate upload data
   const validateUpload = useCallback((datasetType: "DEFAULT" | "TIER_1" | "TIER_2" | "TIER_3"): ValidationReport => {
@@ -402,6 +473,13 @@ export function useDatabaseStore() {
     };
   }, []);
 
+  // One-click break DAG cycle (clears predecessor on the last node of the cycle)
+  const breakDagCycle = useCallback((cycleNodes: string[]) => {
+    if (!cycleNodes || cycleNodes.length < 2) return;
+    const targetId = cycleNodes[cycleNodes.length - 1];
+    stageUpdateActivity(targetId, { predecessor_activity_id: null });
+  }, [stageUpdateActivity]);
+
   return {
     state,
     overview,
@@ -411,10 +489,15 @@ export function useDatabaseStore() {
     selectedLineCode,
     selectedTrackBound,
     activeTab,
+    personaMode,
+    selectedSectorId,
     setSelectedActivityId,
     setSelectedLineCode,
     setSelectedTrackBound,
     setActiveTab,
+    setPersonaMode,
+    setSelectedSectorId,
+    breakDagCycle,
     getActivityFootprint,
     stageUpdateActivity,
     stageAddActivity,
@@ -423,6 +506,8 @@ export function useDatabaseStore() {
     commitChanges,
     discardChanges,
     flushDatabase,
+    loadPresetDataset,
+    parseAndIngestCsvFiles,
     validateUpload,
   };
 }
