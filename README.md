@@ -240,3 +240,32 @@ nebula/
 | **Client & Database API Suite** | `client/` | `npm run test:api` | **PASS** (9/9 suites pass) |
 | **TUI Interactive Regression** | `database/` | `python scripts/test_all_tui_options.py` | **PASS** (10/10 options pass) |
 | **Docker Compose Config** | Root | `docker compose -f compose.local.yaml config` | **VALID** |
+
+## Stub solve endpoint
+
+Start the API (or rebuild the local Docker stack), then run:
+
+```sh
+curl --max-time 180 'http://localhost:8000/stub_solve?scenario=A&max_time_seconds=60'
+```
+
+`scenario` accepts A, B, or C (default A). The search limit is 1–300 seconds
+(exclusive of zero); preprocessing/model construction adds to total request time.
+The response follows the problem-statement report structure: `scenario`,
+`feasible`, `hard_violations`, `soft_scores`, and `detail`. Detail includes the
+exact solver status and whether CSVs were written. Scores describe the found
+schedule; the current solver has no minimization objective. Feasibility uses the
+implemented pairwise co-sharing interpretation, not an external validator.
+
+Successful requests replace `SCHEDULE_ACCESS.csv`, `SCHEDULE_OCCUPANCY.csv`, and
+`RESULTS.csv` in `server/data/actual_output`, using the sample_output headers.
+Each request exports one scenario; the latest successful request replaces the
+previous scenario's files. Unknown/time-limited and infeasible solves leave the
+previous export untouched and set `csv_written` to false. `UNKNOWN` is not proof
+of infeasibility; consult `detail.solver_status` rather than `feasible` alone.
+Concurrent solve requests receive HTTP 409. Invalid query parameters receive 422.
+This GET endpoint writes files, so invoke it explicitly rather than prefetching it.
+
+Local Docker Compose mounts `server/data`, making exports visible on the host.
+Production images include the data; mount `/app/data/actual_output` with write
+permissions for UID 10001 if exports must persist outside the container.
