@@ -56,6 +56,7 @@ services:
             DATABASE_URL: postgresql://${POSTGRES_USER:-nebula_user}:${POSTGRES_PASSWORD:-nebula_password}@database:5432/${POSTGRES_DB:-nebula}
         volumes:
             - ./server/app:/app/app
+            - ./server/data:/app/data
         depends_on:
             database:
                 condition: service_healthy
