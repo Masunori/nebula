@@ -1,17 +1,18 @@
-import type { ReactNode } from "react";
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
+import { AppNav } from '@/components/ui/AppNav';
 
 export const metadata: Metadata = {
-  title: "NebulaX | Railway Access Database & Infrastructure Studio",
-  description: "Next-generation Railway Track Access Optimisation & Infrastructure Management Studio",
+  title: 'RailSync — Railway Track Access Planner',
+  description: 'Railway possession scheduling and replanning tool',
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-slate-950 text-slate-100 min-h-screen selection:bg-cyan-500/30 selection:text-cyan-200">
-        {children}
+    <html lang="en" className="">
+      <body>
+        <AppNav />
+        <main>{children}</main>
       </body>
     </html>
   );

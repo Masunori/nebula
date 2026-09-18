@@ -1,5 +1,36 @@
-import { redirect } from "next/navigation";
+'use client';
+import React, { useEffect, useState } from 'react';
+import { listRuns } from '@/lib/api';
+import type { PlanningRun } from '@/types/planning';
+import { OperationalSummary } from '@/components/planning/OperationalSummary';
+import { RunsTable } from '@/components/planning/RunsTable';
+import { DisruptionControl } from '@/components/planning/DisruptionControl';
+import { Button } from '@/components/ui/Button';
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
 
-export default function Home() {
-  redirect("/database");
+export default function DashboardPage() {
+  const [runs, setRuns] = useState<PlanningRun[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listRuns().then(r => { setRuns(r); setLoading(false); });
+  }, []);
+
+  return (
+    <div className="page-dashboard page-wrap">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Planning Runs</h1>
+          <p className="page-subtitle">Line Alpha · Line Beta · Horizon CW01–CW30 2027</p>
+        </div>
+        <Link href="/upload">
+          <Button variant="primary" leftIcon={<Plus size={16} />}>New planning run</Button>
+        </Link>
+      </div>
+      <OperationalSummary runs={runs} />
+      <RunsTable runs={runs} loading={loading} />
+      <DisruptionControl />
+    </div>
+  );
 }
