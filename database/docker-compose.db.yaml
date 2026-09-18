@@ -1,0 +1,26 @@
+# Standalone Docker Compose configuration for the Nebula database service
+name: nebula-database-stack
+
+services:
+  database:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nebula-database
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nebula}
+      POSTGRES_USER: ${POSTGRES_USER:-nebula_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nebula_password}
+    volumes:
+      - nebula_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  nebula_pgdata:

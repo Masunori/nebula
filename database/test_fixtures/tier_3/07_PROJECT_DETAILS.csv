@@ -1,0 +1,21 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+C001,Synthetic Work Package 1,2027-01-04,Construction,Non-live (Consist),3,2027-07-26,2027-07-12,2,PM,3
+C002,Synthetic Work Package 2,2027-01-04,Renewal,Non-live (Consist),2,2027-05-03,2027-04-19,2,C,3
+C003,Synthetic Work Package 3,2027-01-04,Construction,Non-live (Others),2,2027-08-02,2027-07-19,1,PC,3
+C004,Synthetic Work Package 4,2027-01-04,Renewal,Non-live (Others),2,2027-06-07,2027-05-24,2,PM,3
+C005,Synthetic Work Package 5,2027-01-04,Construction,Non-live (Consist),3,2027-07-19,2027-07-05,1,C,3
+C006,Synthetic Work Package 6,2027-01-04,Renewal,Non-live (Others),2,2027-08-02,2027-07-19,1,PM,3
+C007,Synthetic Work Package 7,2027-01-04,Construction,Live,1,2027-08-02,2027-07-19,2,C,2
+C008,Synthetic Work Package 8,2027-01-04,Renewal,Live,1,2027-05-24,2027-05-10,1,PM,2
+C009,Synthetic Work Package 9,2027-01-04,Construction,Non-live (Others),2,2027-05-24,2027-05-10,1,PC,3
+C010,Synthetic Work Package 10,2027-01-04,Renewal,Non-live (Consist),2,2027-06-28,2027-06-14,1,C,3
+C011,Synthetic Work Package 11,2027-01-04,Construction,Live,2,2027-07-26,2027-07-12,2,PM,2
+C012,Synthetic Work Package 12,2027-01-04,Renewal,Non-live (Others),2,2027-07-26,2027-07-12,1,C,3
+C013,Synthetic Work Package 13,2027-01-04,Construction,Live,2,2027-05-17,2027-05-03,1,C,2
+C014,Synthetic Work Package 14,2027-01-04,Renewal,Non-live (Consist),2,2027-07-26,2027-07-12,1,PM,3
+C015,Synthetic Work Package 15,2027-01-04,Construction,Non-live (Consist),2,2027-07-12,2027-06-28,2,PM,3
+C016,Synthetic Work Package 16,2027-01-04,Renewal,Non-live (Consist),1,2027-06-28,2027-06-14,1,PM,3
+C017,Synthetic Work Package 17,2027-01-04,Construction,Live,3,2027-06-07,2027-05-24,1,PM,2
+C018,Synthetic Work Package 18,2027-01-04,Renewal,Non-live (Consist),1,2027-06-14,2027-05-31,1,PC,3
+C019,Synthetic Work Package 19,2027-01-04,Construction,Non-live (Consist),2,2027-07-05,2027-06-21,1,PM,3
+C020,Synthetic Work Package 20,2027-01-04,Renewal,Live,2,2027-05-03,2027-04-19,1,PM,2

@@ -1,6 +1,26 @@
 name: nebula-prod
 
 services:
+    database:
+        build:
+            context: ./database
+            dockerfile: Dockerfile
+        init: true
+        restart: unless-stopped
+        ports:
+            - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+        environment:
+            POSTGRES_DB: ${POSTGRES_DB:-nebula}
+            POSTGRES_USER: ${POSTGRES_USER:-nebula_user}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nebula_password}
+        volumes:
+            - database_pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
     client:
         build:
             context: ./client
@@ -29,9 +49,17 @@ services:
         restart: unless-stopped
         ports:
             - "127.0.0.1:${SERVER_PORT:-8000}:8000"
+        environment:
+            DATABASE_URL: postgresql://${POSTGRES_USER:-nebula_user}:${POSTGRES_PASSWORD:-nebula_password}@database:5432/${POSTGRES_DB:-nebula}
+        depends_on:
+            database:
+                condition: service_healthy
         healthcheck:
             test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
             interval: 30s
             timeout: 10s
             start_period: 10s
             retries: 3
+
+volumes:
+    database_pgdata:

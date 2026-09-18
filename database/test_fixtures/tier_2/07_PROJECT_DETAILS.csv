@@ -1,0 +1,101 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+C001,Synthetic Work Package 1,2027-01-04,Construction,Non-live (Consist),2,2027-06-21,2027-06-07,1,PC,3
+C002,Synthetic Work Package 2,2027-01-04,Renewal,Live,3,2027-12-06,2027-11-22,2,C,2
+C003,Synthetic Work Package 3,2027-01-04,Construction,Non-live (Others),2,2027-11-29,2027-11-15,2,C,3
+C004,Synthetic Work Package 4,2027-01-04,Renewal,Non-live (Others),3,2027-11-22,2027-11-08,2,PC,3
+C005,Synthetic Work Package 5,2027-01-04,Construction,Non-live (Consist),3,2027-10-11,2027-09-27,2,PM,3
+C006,Synthetic Work Package 6,2027-01-04,Renewal,Live,2,2027-09-13,2027-08-30,2,PM,2
+C007,Synthetic Work Package 7,2027-01-04,Construction,Non-live (Consist),2,2027-08-09,2027-07-26,2,C,3
+C008,Synthetic Work Package 8,2027-01-04,Renewal,Non-live (Consist),2,2027-08-02,2027-07-19,2,PM,3
+C009,Synthetic Work Package 9,2027-01-04,Construction,Live,2,2027-10-11,2027-09-27,2,C,2
+C010,Synthetic Work Package 10,2027-01-04,Renewal,Live,2,2027-05-17,2027-05-03,2,PM,2
+C011,Synthetic Work Package 11,2027-01-04,Construction,Live,2,2027-11-15,2027-11-01,1,C,2
+C012,Synthetic Work Package 12,2027-01-04,Renewal,Non-live (Others),3,2027-06-07,2027-05-24,2,PM,3
+C013,Synthetic Work Package 13,2027-01-04,Construction,Live,3,2027-10-11,2027-09-27,1,PC,2
+C014,Synthetic Work Package 14,2027-01-04,Renewal,Non-live (Consist),2,2027-07-12,2027-06-28,2,C,3
+C015,Synthetic Work Package 15,2027-01-04,Construction,Non-live (Others),3,2027-07-12,2027-06-28,2,PC,3
+C016,Synthetic Work Package 16,2027-01-04,Renewal,Live,2,2027-12-20,2027-12-06,1,PC,2
+C017,Synthetic Work Package 17,2027-01-04,Construction,Non-live (Consist),2,2027-06-28,2027-06-14,1,C,3
+C018,Synthetic Work Package 18,2027-01-04,Renewal,Non-live (Consist),1,2027-11-29,2027-11-15,2,C,3
+C019,Synthetic Work Package 19,2027-01-04,Construction,Non-live (Others),2,2027-06-21,2027-06-07,1,C,3
+C020,Synthetic Work Package 20,2027-01-04,Renewal,Non-live (Others),1,2027-05-24,2027-05-10,1,C,3
+C021,Synthetic Work Package 21,2027-01-04,Construction,Live,2,2027-07-05,2027-06-21,1,PC,2
+C022,Synthetic Work Package 22,2027-01-04,Renewal,Live,3,2027-10-25,2027-10-11,2,PC,2
+C023,Synthetic Work Package 23,2027-01-04,Construction,Non-live (Consist),2,2027-08-30,2027-08-16,2,PM,3
+C024,Synthetic Work Package 24,2027-01-04,Renewal,Non-live (Others),2,2028-01-03,2027-12-20,1,PC,3
+C025,Synthetic Work Package 25,2027-01-04,Construction,Non-live (Consist),3,2027-08-16,2027-08-02,2,PC,3
+C026,Synthetic Work Package 26,2027-01-04,Renewal,Live,3,2027-08-09,2027-07-26,2,C,2
+C027,Synthetic Work Package 27,2027-01-04,Construction,Live,3,2027-11-29,2027-11-15,2,PM,2
+C028,Synthetic Work Package 28,2027-01-04,Renewal,Non-live (Consist),3,2027-07-26,2027-07-12,2,PC,3
+C029,Synthetic Work Package 29,2027-01-04,Construction,Non-live (Others),2,2027-05-31,2027-05-17,1,PM,3
+C030,Synthetic Work Package 30,2027-01-04,Renewal,Non-live (Others),3,2027-07-12,2027-06-28,1,C,3
+C031,Synthetic Work Package 31,2027-01-04,Construction,Non-live (Consist),1,2027-06-07,2027-05-24,2,PM,3
+C032,Synthetic Work Package 32,2027-01-04,Renewal,Non-live (Others),3,2027-11-15,2027-11-01,2,PC,3
+C033,Synthetic Work Package 33,2027-01-04,Construction,Non-live (Consist),1,2027-05-10,2027-04-26,2,PM,3
+C034,Synthetic Work Package 34,2027-01-04,Renewal,Non-live (Consist),2,2027-09-27,2027-09-13,2,PM,3
+C035,Synthetic Work Package 35,2027-01-04,Construction,Non-live (Others),2,2027-11-22,2027-11-08,2,PC,3
+C036,Synthetic Work Package 36,2027-01-04,Renewal,Live,1,2027-09-20,2027-09-06,2,PC,2
+C037,Synthetic Work Package 37,2027-01-04,Construction,Live,2,2027-08-23,2027-08-09,1,C,2
+C038,Synthetic Work Package 38,2027-01-04,Renewal,Non-live (Others),2,2027-12-06,2027-11-22,2,PC,3
+C039,Synthetic Work Package 39,2027-01-04,Construction,Non-live (Others),1,2028-01-03,2027-12-20,2,C,3
+C040,Synthetic Work Package 40,2027-01-04,Renewal,Non-live (Others),2,2027-05-10,2027-04-26,2,PM,3
+C041,Synthetic Work Package 41,2027-01-04,Construction,Live,3,2027-09-20,2027-09-06,2,PM,2
+C042,Synthetic Work Package 42,2027-01-04,Renewal,Live,2,2027-11-08,2027-10-25,2,C,2
+C043,Synthetic Work Package 43,2027-01-04,Construction,Non-live (Consist),2,2027-10-25,2027-10-11,1,C,3
+C044,Synthetic Work Package 44,2027-01-04,Renewal,Non-live (Others),3,2027-12-27,2027-12-13,2,C,3
+C045,Synthetic Work Package 45,2027-01-04,Construction,Non-live (Others),3,2027-07-12,2027-06-28,2,PM,3
+C046,Synthetic Work Package 46,2027-01-04,Renewal,Non-live (Others),2,2027-08-23,2027-08-09,2,PM,3
+C047,Synthetic Work Package 47,2027-01-04,Construction,Non-live (Consist),1,2027-08-23,2027-08-09,2,PC,3
+C048,Synthetic Work Package 48,2027-01-04,Renewal,Non-live (Consist),3,2027-10-04,2027-09-20,1,PM,3
+C049,Synthetic Work Package 49,2027-01-04,Construction,Live,3,2027-08-02,2027-07-19,1,PC,2
+C050,Synthetic Work Package 50,2027-01-04,Renewal,Non-live (Consist),3,2027-11-22,2027-11-08,2,C,3
+C051,Synthetic Work Package 51,2027-01-04,Construction,Non-live (Others),1,2027-08-30,2027-08-16,1,PC,3
+C052,Synthetic Work Package 52,2027-01-04,Renewal,Live,3,2027-07-19,2027-07-05,1,PM,2
+C053,Synthetic Work Package 53,2027-01-04,Construction,Non-live (Consist),1,2027-12-13,2027-11-29,2,PC,3
+C054,Synthetic Work Package 54,2027-01-04,Renewal,Live,1,2027-05-31,2027-05-17,2,C,2
+C055,Synthetic Work Package 55,2027-01-04,Construction,Non-live (Others),1,2027-09-20,2027-09-06,2,PC,3
+C056,Synthetic Work Package 56,2027-01-04,Renewal,Non-live (Consist),1,2027-06-07,2027-05-24,2,C,3
+C057,Synthetic Work Package 57,2027-01-04,Construction,Live,1,2027-06-14,2027-05-31,1,PM,2
+C058,Synthetic Work Package 58,2027-01-04,Renewal,Non-live (Others),1,2027-11-15,2027-11-01,1,PM,3
+C059,Synthetic Work Package 59,2027-01-04,Construction,Non-live (Others),3,2027-10-25,2027-10-11,1,C,3
+C060,Synthetic Work Package 60,2027-01-04,Renewal,Non-live (Others),2,2027-08-16,2027-08-02,2,C,3
+C061,Synthetic Work Package 61,2027-01-04,Construction,Non-live (Others),3,2027-07-05,2027-06-21,1,PC,3
+C062,Synthetic Work Package 62,2027-01-04,Renewal,Non-live (Others),3,2027-06-21,2027-06-07,2,PM,3
+C063,Synthetic Work Package 63,2027-01-04,Construction,Non-live (Consist),1,2027-05-24,2027-05-10,2,PM,3
+C064,Synthetic Work Package 64,2027-01-04,Renewal,Live,2,2027-11-08,2027-10-25,1,C,2
+C065,Synthetic Work Package 65,2027-01-04,Construction,Non-live (Consist),2,2027-08-23,2027-08-09,1,PM,3
+C066,Synthetic Work Package 66,2027-01-04,Renewal,Non-live (Consist),2,2027-11-15,2027-11-01,1,PM,3
+C067,Synthetic Work Package 67,2027-01-04,Construction,Non-live (Consist),2,2027-05-31,2027-05-17,1,PC,3
+C068,Synthetic Work Package 68,2027-01-04,Renewal,Non-live (Others),2,2027-08-02,2027-07-19,1,C,3
+C069,Synthetic Work Package 69,2027-01-04,Construction,Live,2,2027-11-22,2027-11-08,1,PC,2
+C070,Synthetic Work Package 70,2027-01-04,Renewal,Live,3,2027-05-10,2027-04-26,2,PM,2
+C071,Synthetic Work Package 71,2027-01-04,Construction,Non-live (Others),2,2027-11-22,2027-11-08,2,PC,3
+C072,Synthetic Work Package 72,2027-01-04,Renewal,Live,2,2027-11-08,2027-10-25,2,PM,2
+C073,Synthetic Work Package 73,2027-01-04,Construction,Non-live (Consist),2,2027-11-29,2027-11-15,1,PM,3
+C074,Synthetic Work Package 74,2027-01-04,Renewal,Live,2,2027-12-13,2027-11-29,2,C,2
+C075,Synthetic Work Package 75,2027-01-04,Construction,Non-live (Consist),1,2027-06-07,2027-05-24,2,C,3
+C076,Synthetic Work Package 76,2027-01-04,Renewal,Live,2,2027-10-11,2027-09-27,1,PC,2
+C077,Synthetic Work Package 77,2027-01-04,Construction,Live,1,2027-08-09,2027-07-26,1,PC,2
+C078,Synthetic Work Package 78,2027-01-04,Renewal,Non-live (Consist),1,2027-08-23,2027-08-09,2,PC,3
+C079,Synthetic Work Package 79,2027-01-04,Construction,Non-live (Consist),1,2027-06-14,2027-05-31,2,PC,3
+C080,Synthetic Work Package 80,2027-01-04,Renewal,Live,2,2027-07-05,2027-06-21,1,PM,2
+C081,Synthetic Work Package 81,2027-01-04,Construction,Non-live (Consist),2,2027-06-28,2027-06-14,2,C,3
+C082,Synthetic Work Package 82,2027-01-04,Renewal,Non-live (Others),2,2027-06-21,2027-06-07,2,PC,3
+C083,Synthetic Work Package 83,2027-01-04,Construction,Live,1,2027-11-01,2027-10-18,1,C,2
+C084,Synthetic Work Package 84,2027-01-04,Renewal,Non-live (Others),2,2028-01-03,2027-12-20,2,C,3
+C085,Synthetic Work Package 85,2027-01-04,Construction,Live,2,2027-12-27,2027-12-13,2,PM,2
+C086,Synthetic Work Package 86,2027-01-04,Renewal,Non-live (Consist),3,2027-06-21,2027-06-07,1,PM,3
+C087,Synthetic Work Package 87,2027-01-04,Construction,Non-live (Others),3,2027-05-24,2027-05-10,1,PM,3
+C088,Synthetic Work Package 88,2027-01-04,Renewal,Non-live (Consist),3,2027-05-24,2027-05-10,2,PC,3
+C089,Synthetic Work Package 89,2027-01-04,Construction,Non-live (Others),2,2027-11-29,2027-11-15,1,PC,3
+C090,Synthetic Work Package 90,2027-01-04,Renewal,Live,1,2027-11-29,2027-11-15,1,PC,2
+C091,Synthetic Work Package 91,2027-01-04,Construction,Non-live (Consist),2,2027-11-29,2027-11-15,1,PM,3
+C092,Synthetic Work Package 92,2027-01-04,Renewal,Live,1,2027-07-12,2027-06-28,2,PM,2
+C093,Synthetic Work Package 93,2027-01-04,Construction,Non-live (Consist),1,2027-05-31,2027-05-17,1,C,3
+C094,Synthetic Work Package 94,2027-01-04,Renewal,Non-live (Others),2,2027-06-14,2027-05-31,1,C,3
+C095,Synthetic Work Package 95,2027-01-04,Construction,Live,3,2027-06-21,2027-06-07,2,PM,2
+C096,Synthetic Work Package 96,2027-01-04,Renewal,Live,2,2027-05-31,2027-05-17,1,C,2
+C097,Synthetic Work Package 97,2027-01-04,Construction,Non-live (Others),1,2027-06-21,2027-06-07,2,C,3
+C098,Synthetic Work Package 98,2027-01-04,Renewal,Non-live (Others),3,2027-11-01,2027-10-18,1,PC,3
+C099,Synthetic Work Package 99,2027-01-04,Construction,Live,1,2027-11-22,2027-11-08,1,C,2
+C100,Synthetic Work Package 100,2027-01-04,Renewal,Non-live (Others),1,2027-11-22,2027-11-08,2,PC,3
