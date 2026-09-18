@@ -1,6 +1,7 @@
 """Focused checks for variable linking and hard constraints 1, 2 and 3."""
 
 import unittest
+from datetime import date, timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -51,10 +52,20 @@ def with_resource_defaults(data):
     }
     data.lines = {"ALP": {}, "BET": {}}
     data.parameters = SimpleNamespace(horizon_weeks=max(data.weeks))
+    data.objective_scale = 10
+    data.week_end_dates = {
+        str(w): (date(2027, 1, 3) + timedelta(weeks=w)).isoformat()
+        for w in data.weeks
+    }
+    data.contracts = {
+        "C1": SimpleNamespace(planned_completion_date=data.week_end_dates[str(max(data.weeks))])
+    }
     for group in data.groups.values():
         group.number_of_maximum_access_per_week = len(group.local_nights)
         group.number_of_workfronts = 100
     for activity in data.activities.values():
+        activity.contract_number = "C1"
+        activity.delay_weight_scaled = 10
         activity.deadline_week = max(data.weeks)
         activity.affected_lines = ["ALP"]
     return data

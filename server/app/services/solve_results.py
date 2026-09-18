@@ -38,7 +38,7 @@ def build_result(service: SatSolverService) -> tuple[dict, dict[str, list[dict]]
 
     Returns:
         (report, tables). Tables are empty if no feasible assignment was found.
-        Scores describe the assignment; no objective optimization is claimed.
+        Scores describe the incumbent; objective_optimized means proven optimal.
         An UNKNOWN status means no solution found within the limit, not proven
         infeasibility. Hard violations are not fabricated from solver status.
 
@@ -56,7 +56,7 @@ def build_result(service: SatSolverService) -> tuple[dict, dict[str, list[dict]]
         "detail": {
             "solver_status": service.solver.status_name(service.status),
             "wall_time_seconds": service.solver.wall_time,
-            "objective_optimized": False,
+            "objective_optimized": service.status == cp_model.OPTIMAL,
             "validation_scope": "Implemented CP-SAT model; pairwise co-sharing interpretation",
             "capacity_hotspots": [],
             "nights_scheduled": 0,

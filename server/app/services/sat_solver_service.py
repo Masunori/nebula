@@ -1,3 +1,5 @@
+from datetime import date
+
 from ortools.sat.python import cp_model
 from .csv_preprocessor import preprocess_directory
 from ..models.preprocessed_data import PreparedProblem
@@ -442,9 +444,84 @@ def add_scenario_hard_constraints(
     return window_starts
 
 
+def add_activity_overrun_variables(
+    model: cp_model.CpModel, data: PreparedProblem, variables: OptimizationVariables
+) -> dict[str, cp_model.IntVar]:
+    """Define exact calendar-day overrun per activity (documentation section 6).
+
+    Workload constraints ensure each activity runs. Since week-end dates increase,
+    the maximum selected week's nonnegative lateness equals lateness at F_a.
+    This charges only completion lateness, not the sum of late working weeks.
+    """
+    overruns = {}
+    for activity_id, activity in data.activities.items():
+        deadline = date.fromisoformat(
+            data.contracts[activity.contract_number].planned_completion_date
+        )
+        lateness = {
+            week: max(0, (date.fromisoformat(data.week_end_dates[str(week)]) - deadline).days)
+            for week in data.weeks
+        }
+        overrun = model.new_int_var(0, max(lateness.values()), f"overrun_{activity_id}")
+        model.add_max_equality(overrun, [
+            days * variables.activity_week_access_vars[activity_id, week]
+            for week, days in lateness.items()
+        ])
+        overruns[activity_id] = overrun
+    return overruns
+
+
+def add_supply_excess_variables(
+    model: cp_model.CpModel, data: PreparedProblem, variables: OptimizationVariables
+) -> dict[tuple[str, int], cp_model.IntVar]:
+    """Define exact excess max(0, sum_g u_lwg - K_l), counting possessions."""
+    excesses = {}
+    for location, groups in data.possession_group_domains.items():
+        capacity = data.location_capacity[location]
+        for week in data.weeks:
+            excess = model.new_int_var(
+                0, max(0, len(groups) - capacity), f"excess_{location}_{week}"
+            )
+            used = sum(variables.possess_group_usage_vars[location, week, g] for g in groups)
+            model.add_max_equality(excess, [0, used - capacity])
+            excesses[location, week] = excess
+    return excesses
+
+
+def add_scenario_objective(
+    model: cp_model.CpModel,
+    data: PreparedProblem,
+    variables: OptimizationVariables,
+    scenario: str,
+) -> None:
+    """Minimize A: P; B: 7X + 5E; C: P + 7X + 5E (sections 7–10).
+
+    Prepared coefficients are scaled by objective_scale (10), preserving the
+    fractional activity-priority nudges with integer CP-SAT arithmetic. Divide
+    solver objective values and bounds by that scale to obtain reported scores.
+    Scenario hard constraints must be added separately. Replaces any objective.
+    """
+    if scenario not in ("A", "B", "C"):
+        raise ValueError("scenario must be 'A', 'B' or 'C'")
+    settings = data.scenarios[scenario]
+    terms = []
+    if settings.delay_multiplier:
+        overruns = add_activity_overrun_variables(model, data, variables)
+        terms.extend(
+            settings.delay_multiplier * data.activities[a].delay_weight_scaled * overrun
+            for a, overrun in overruns.items()
+        )
+    if settings.excess_weight_scaled:
+        excesses = add_supply_excess_variables(model, data, variables)
+        terms.extend(settings.excess_weight_scaled * excess for excess in excesses.values())
+    if settings.eclo_weight_scaled:
+        terms.extend(settings.eclo_weight_scaled * e for e in variables.eclo_vars.values())
+    model.minimize(sum(terms))
+
+
 class SatSolverService:
     def __init__(self, scenario: str = "A"):
-        """Build hard constraints for one scenario (A by default), without an objective.
+        """Build hard constraints and the optimization objective for one scenario.
 
         Args:
             scenario: A, B or C; selects supply, deadline and ECLO policies.
@@ -476,12 +553,14 @@ class SatSolverService:
         add_closure_and_buffer_constraints(self.model, self.data, self.variables)
         add_possession_legal_mix_constraints(self.model, self.data, self.variables)
         add_weekly_resource_constraints(self.model, self.data, self.variables)
+
         self.eclo_window_starts = add_scenario_hard_constraints(
             self.model, self.data, self.variables, scenario
         )
+        add_scenario_objective(self.model, self.data, self.variables, scenario)
 
     def solve(self, max_time_seconds: float = 60, workers: int = 8) -> bool:
-        """Search for a feasible assignment with a bounded solver runtime.
+        """Minimize the scenario score with a bounded solver runtime.
 
         Args:
             max_time_seconds: Positive solver search limit, excluding model building.
@@ -490,6 +569,7 @@ class SatSolverService:
         Returns:
             True only when an assignment is available. The exact result status
             is saved in self.status, distinguishing INFEASIBLE from UNKNOWN.
+            FEASIBLE is an incumbent; only OPTIMAL proves objective optimality.
         """
         if max_time_seconds <= 0 or workers < 1:
             raise ValueError("Search limit and worker count must be positive")
