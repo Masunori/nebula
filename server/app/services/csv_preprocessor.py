@@ -557,7 +557,10 @@ def _build_activity_footprint(
         max(0, lower_station - radius),
         min(len(station_order[line]) - 1, upper_station + radius),
     )
-    buffer = {loc for loc in (extended - route) if loc.startswith("SEC:")}
+    if project["nature_of_activity"] == "Live":
+        buffer = set(extended - route)
+    else:
+        buffer = {loc for loc in (extended - route) if loc.startswith("SEC:")}
     mirror = (
         {opposite[location_id] for location_id in extended}
         if rule["opposite_bound_required"]
