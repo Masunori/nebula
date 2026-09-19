@@ -146,6 +146,47 @@ async function runTests() {
     if (!html.includes("Network Graph")) throw new Error("Network Graph tab missing from HTML");
   });
 
+  // 9. Standalone Fast Schedule Validation (<150ms)
+  await test("POST /api/solver/validate (Standalone Fast Auditor)", async () => {
+    const res = await fetch(`${BASE_URL}/api/solver/validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scenario: "A" }),
+    });
+    if (res.status !== 200) throw new Error(`Status ${res.status}`);
+    const data = await res.json();
+    if (typeof data.feasible !== "boolean") throw new Error("Missing feasible boolean in validation response");
+    if (!data.soft_scores) throw new Error("Missing soft_scores in validation response");
+  });
+
+  // 10. Download Single Submission CSV
+  await test("GET /api/solver/download?file=RESULTS.csv", async () => {
+    const res = await fetch(`${BASE_URL}/api/solver/download?file=RESULTS.csv`);
+    if (res.status !== 200) throw new Error(`Status ${res.status}`);
+    const text = await res.text();
+    if (!text.includes("scenario,contract_number,simulated_completion_date,overrun_days")) {
+      throw new Error("RESULTS.csv header mismatch");
+    }
+  });
+
+  // 11. Download Submission ZIP Package
+  await test("GET /api/solver/download?file=zip (Submission ZIP Package)", async () => {
+    const res = await fetch(`${BASE_URL}/api/solver/download?file=zip&scenario=A`);
+    if (res.status !== 200) throw new Error(`Status ${res.status}`);
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength < 1000) throw new Error(`ZIP package suspiciously small: ${buf.byteLength} bytes`);
+  });
+
+  // 12. Master Schedule Page UI Rendering
+  await test("GET /schedule (Master Schedule HTML UI Rendering)", async () => {
+    const res = await fetch(`${BASE_URL}/schedule`);
+    if (res.status !== 200) throw new Error(`Status ${res.status}`);
+    const html = await res.text();
+    if (!html.includes("Railway Track Access Planner")) {
+      throw new Error("Schedule planner title missing from HTML");
+    }
+  });
+
   console.log("==================================================================");
   console.log(`Results: ${passed} Passed, ${failed} Failed`);
   console.log("==================================================================");

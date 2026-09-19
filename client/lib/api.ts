@@ -55,10 +55,51 @@ export async function getTimetable(runId: string): Promise<TimetableRow[]> {
 }
 
 export async function getScheduleDownloads(runId: string): Promise<ScheduleDownload[]> {
-  await delay(200);
   const run = PLANNING_RUNS.find(candidate => candidate.runId === runId);
-  if (!run) throw new Error('Planning run not found.');
-  return buildScheduleDownloads(run);
+  const scenario = run?.scenario || 'A';
+
+  try {
+    const files = ['SCHEDULE_ACCESS.csv', 'SCHEDULE_OCCUPANCY.csv', 'RESULTS.csv'];
+    const results = await Promise.all(
+      files.map(async filename => {
+        const res = await fetch(`/api/solver/download?file=${filename}&scenario=${scenario}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const content = await res.text();
+        return { filename, content };
+      })
+    );
+    return results;
+  } catch (err) {
+    // Fallback to local mock generator if server is unavailable
+    if (!run) throw new Error('Planning run not found.');
+    return buildScheduleDownloads(run);
+  }
+}
+
+export async function solveScenarioRemote(scenario: Scenario, maxTimeSeconds: number = 30): Promise<any> {
+  const res = await fetch('/api/solver/solve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scenario, max_time_seconds: maxTimeSeconds, sync_db: true }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Solver error: ${err}`);
+  }
+  return res.json();
+}
+
+export async function validateScheduleRemote(scenario: Scenario): Promise<any> {
+  const res = await fetch('/api/solver/validate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scenario }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Validator error: ${err}`);
+  }
+  return res.json();
 }
 
 export async function createDraft(runId: string): Promise<PlanningRun> {

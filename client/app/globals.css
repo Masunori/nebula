@@ -776,3 +776,471 @@ img, svg { display: block; max-width: 100%; }
 /* ─── Impact banner ──────────────────────────────────────────── */
 .impact-banner { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-4); background: var(--status-green-bg); border: 1px solid var(--status-green-border); border-radius: var(--radius-md); font-size: 13px; color: var(--status-green); margin-top: var(--space-4); }
 .impact-banner.warning { background: var(--status-amber-bg); border-color: var(--status-amber-border); color: var(--status-amber); }
+
+/* ─── Antigravity Spatial Glassmorphism & Telemetry ────────────── */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(221, 230, 236, 0.9);
+  --glass-border-glow: rgba(26, 143, 163, 0.4);
+  --glass-shadow: 0 20px 40px -12px rgba(10, 61, 71, 0.12), 0 4px 16px -4px rgba(15, 25, 35, 0.06);
+  --glass-inner-bevel: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --node-glow: rgba(38, 179, 204, 0.4);
+  --hub-glow: rgba(168, 85, 247, 0.5);
+}
+
+html[data-theme='dark'] {
+  --glass-bg: rgba(23, 36, 45, 0.85);
+  --glass-bg-subtle: rgba(23, 36, 45, 0.6);
+  --glass-border: rgba(57, 83, 95, 0.7);
+  --glass-border-glow: rgba(38, 179, 204, 0.5);
+  --glass-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5), 0 4px 16px -4px rgba(0, 0, 0, 0.35);
+  --glass-inner-bevel: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --node-glow: rgba(38, 179, 204, 0.5);
+  --hub-glow: rgba(168, 85, 247, 0.65);
+}
+
+/* Weightless Spatial Glass Card */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner-bevel);
+  border-radius: var(--radius-lg);
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease-out;
+  will-change: transform, box-shadow;
+}
+
+/* Schedule Pre-Calculation Container & Banner */
+.schedule-precalc-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 920px;
+  margin: var(--space-4) auto var(--space-8);
+  width: 100%;
+}
+
+.precalc-integrity-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--teal-050);
+  border: 1px solid var(--border-teal);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+}
+
+.integrity-banner-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  background: white;
+  border: 1px solid var(--border-teal);
+  color: var(--teal-600);
+}
+
+.integrity-banner-body {
+  flex: 1;
+}
+
+.integrity-banner-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--teal-900);
+  margin-bottom: 2px;
+}
+
+.integrity-banner-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-600);
+  margin: 0;
+}
+
+/* Precalc Glass Card */
+.precalc-card {
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.precalc-card-header {
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: var(--space-5);
+}
+
+.precalc-header-brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.precalc-engine-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--teal-700);
+  background: var(--teal-050);
+  border: 1px solid var(--border-teal);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  align-self: flex-start;
+}
+
+.engine-icon-pulse {
+  animation: subtlePulse 2.5s infinite ease-in-out;
+}
+
+.precalc-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink-900);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.precalc-subtitle {
+  font-size: 13px;
+  color: var(--ink-500);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.precalc-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.precalc-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.precalc-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.precalc-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-800);
+}
+
+/* Scenario Dropdown */
+.scenario-dropdown-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.scenario-dropdown-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-xs);
+}
+
+.scenario-dropdown-trigger:hover {
+  border-color: var(--teal-400);
+  box-shadow: var(--shadow-sm);
+}
+
+.trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.trigger-scenario-letter {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--teal-700);
+  background: var(--teal-050);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-teal);
+}
+
+.trigger-scenario-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-800);
+}
+
+.trigger-chevron {
+  color: var(--ink-400);
+  transition: transform 0.2s ease;
+}
+
+.trigger-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.scenario-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.scenario-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-default);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.scenario-option:last-child {
+  border-bottom: none;
+}
+
+.scenario-option:hover {
+  background: var(--ink-050);
+}
+
+.scenario-option.selected {
+  background: var(--teal-050);
+  border-left: 3px solid var(--teal-500);
+}
+
+/* Time Budget Grid */
+.time-budgets-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .time-budgets-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.time-budget-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-xs);
+  text-align: center;
+}
+
+.time-budget-btn:hover {
+  border-color: var(--teal-400);
+  background: var(--ink-050);
+}
+
+.time-budget-btn.selected {
+  border-color: var(--teal-500);
+  background: var(--teal-050);
+  box-shadow: 0 0 0 1px var(--teal-500), var(--shadow-xs);
+}
+
+.tb-time {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-900);
+}
+
+.tb-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--teal-700);
+}
+
+.tb-desc {
+  font-size: 10px;
+  color: var(--ink-400);
+  margin-top: 2px;
+  line-height: 1.25;
+}
+
+/* Glowing Primary Button */
+.precalc-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+
+.btn-calculate-glow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0f5c6b 0%, #1a8fa3 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 20px -4px rgba(26, 143, 163, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+.btn-calculate-glow:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -4px rgba(26, 143, 163, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, #137080 0%, #26b3cc 100%);
+}
+
+.btn-calculate-glow:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px -2px rgba(26, 143, 163, 0.4);
+}
+
+.btn-calculate-glow:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ─── Telemetry Bar (Solved State Header) ──────────────────────── */
+.telemetry-bar-wrapper {
+  margin-bottom: var(--space-4);
+  width: 100%;
+}
+
+.telemetry-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm), var(--glass-inner-bevel);
+}
+
+.telemetry-chips-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.telemetry-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  color: var(--ink-700);
+}
+
+.telemetry-chip strong {
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.telemetry-chip-timestamp {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.telemetry-chip-timestamp:hover {
+  border-color: var(--teal-400);
+}
+
+.btn--recalculate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--teal-700);
+  background: var(--teal-050);
+  border: 1px solid var(--border-teal);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn--recalculate:hover:not(:disabled) {
+  background: var(--teal-100);
+  border-color: var(--teal-400);
+  transform: translateY(-1px);
+}
+
+/* ─── Network Graph Anchored Node & Pulse Animations ───────────── */
+@keyframes subtlePulse {
+  0%, 100% {
+    opacity: 0.35;
+    stroke-width: 2px;
+  }
+  50% {
+    opacity: 0.75;
+    stroke-width: 2.8px;
+  }
+}
+
+.station-node-anchored {
+  transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
+}
+
+.station-node-anchored:hover {
+  stroke-width: 3.5px !important;
+}
+
+.hub-pulse-ring {
+  animation: subtlePulse 3s infinite ease-in-out;
+  transform-origin: center;
+}
+

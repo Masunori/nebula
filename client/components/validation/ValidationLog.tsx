@@ -15,15 +15,29 @@ const ruleLabels: Record<ValidationLogEntry['rule'], string> = {
 };
 
 interface ValidationLogProps {
-  entries: ValidationLogEntry[];
-  onSelectEntry: (entry: ValidationLogEntry) => void;
-  selectedEntryId: string | null;
+  entries?: ValidationLogEntry[];
+  log?: ValidationLogEntry[];
+  onSelectEntry?: (entry: ValidationLogEntry) => void;
+  onSelectViolation?: (entry: ValidationLogEntry) => void;
+  selectedEntryId?: string | null;
+  highlightCellKey?: string | null;
 }
 
-export function ValidationLog({ entries, onSelectEntry, selectedEntryId }: ValidationLogProps) {
+export function ValidationLog({
+  entries,
+  log,
+  onSelectEntry,
+  onSelectViolation,
+  selectedEntryId,
+  highlightCellKey,
+}: ValidationLogProps) {
   const [tab, setTab] = useState<'all' | 'error' | 'warning' | 'ok'>('all');
 
-  const filtered = tab === 'all' ? entries : entries.filter(e => e.severity === tab);
+  const rawEntries = entries ?? log ?? [];
+  const handleSelect = onSelectEntry ?? onSelectViolation ?? (() => {});
+  const activeId = selectedEntryId ?? highlightCellKey ?? null;
+
+  const filtered = tab === 'all' ? rawEntries : rawEntries.filter(e => e.severity === tab);
 
   return (
     <div>
@@ -80,8 +94,8 @@ export function ValidationLog({ entries, onSelectEntry, selectedEntryId }: Valid
               <tr
                 role="row"
                 key={entry.id}
-                className={entry.id === selectedEntryId ? 'row--selected' : ''}
-                onClick={() => onSelectEntry(entry)}
+                className={entry.id === activeId ? 'row--selected' : ''}
+                onClick={() => handleSelect(entry)}
                 style={{ cursor: 'pointer' }}
               >
                 <td><StatusIcon status={entry.severity} size={16} /></td>
