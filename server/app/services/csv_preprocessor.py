@@ -413,9 +413,11 @@ def _build_conflicts(
     """Find spatial conflicts between independent activity possessions.
 
     A pair conflicts when either working route intersects the other's total
-    footprint, or their buffers intersect. Candidate pairs are restricted to
-    activities sharing an affected location. These are not unconditional
-    scheduling bans: the future solver must apply legal co-sharing exceptions.
+    footprint: (R_b & C_a) or (R_a & C_b). Touching buffers (B_a & B_b) without
+    route intrusion do not conflict, providing legal safety separation.
+    Candidate pairs are restricted to activities sharing an affected location.
+    These are not unconditional scheduling bans: the solver and validator
+    must apply legal co-sharing exceptions.
 
     Args:
         prepared: Activity ID -> prepared row containing R (working locations),
@@ -443,11 +445,7 @@ def _build_conflicts(
     conflicts_by_activity = {a: [] for a in prepared}
     for a, b in sorted(candidates):
         left, right = sets[a], sets[b]
-        overlap = (
-            (right["R"] & left["C"])
-            | (left["R"] & right["C"])
-            | (left["B"] & right["B"])
-        )
+        overlap = (right["R"] & left["C"]) | (left["R"] & right["C"])
         if overlap:
             conflicts.append(
                 {
@@ -559,7 +557,7 @@ def _build_activity_footprint(
         max(0, lower_station - radius),
         min(len(station_order[line]) - 1, upper_station + radius),
     )
-    buffer = extended - route
+    buffer = {loc for loc in (extended - route) if loc.startswith("SEC:")}
     mirror = (
         {opposite[location_id] for location_id in extended}
         if rule["opposite_bound_required"]

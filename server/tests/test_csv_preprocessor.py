@@ -82,9 +82,7 @@ class PreprocessingTests(unittest.TestCase):
             set(a.B),
             {
                 "SEC:BET:H02_S15:EB",
-                "PLAT:BET:H02:EB",
                 "SEC:BET:S17_S18:EB",
-                "PLAT:BET:S18:EB",
             },
         )
         self.assertEqual(a.INT, [])
@@ -125,7 +123,7 @@ class PreprocessingTests(unittest.TestCase):
         )
         a = preprocess_csv_files(self.files).activities["A001"]
         self.assertEqual(len(a.R), 5)
-        self.assertEqual(set(a.B), {"SEC:BET:S13_S14:WB", "PLAT:BET:S14:WB"})
+        self.assertEqual(set(a.B), {"SEC:BET:S13_S14:WB"})
 
     def test_platform_only_and_non_live_others(self):
         self.edit(
@@ -149,7 +147,6 @@ class PreprocessingTests(unittest.TestCase):
                 if (
                     set(aa.R) & set(bb.C)
                     or set(bb.R) & set(aa.C)
-                    or set(aa.B) & set(bb.B)
                 ):
                     expected.add((a, b))
         self.assertEqual({tuple(c.activities) for c in data.conflicts}, expected)

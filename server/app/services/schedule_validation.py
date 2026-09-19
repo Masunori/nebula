@@ -182,10 +182,26 @@ def validate_schedule(directory: str | Path, data: PreparedProblem, scenario: st
         if counts["PM"] + counts["PC"] > 1 or counts["C"] + counts["PC"] + 4 * counts["PM"] > 4:
             error("possession_mix", "Illegal possession sharing mix", location_id=loc, week=w, co_share_group=g)
     active_weeks = {a: {r["week"] for r in rows} for a, rows in by_activity.items()}
+    access_nights = {(r["activity_id"], r["week"]): r["access_night"] for r in access}
     for conflict in data.conflicts:
         a, b = conflict.activities
         for w in sorted(active_weeks[a] & active_weeks[b]):
-            if not membership[a, w].intersection(membership[b, w]):
+            if membership[a, w].intersection(membership[b, w]):
+                continue
+            is_live_a = getattr(data.activities.get(a), "nature_of_activity", "") == "Live"
+            is_live_b = getattr(data.activities.get(b), "nature_of_activity", "") == "Live"
+            if is_live_a or is_live_b:
+                error(
+                    "closure_buffer", "Activity inside another group's live closure zone",
+                    activities=[a, b], week=w,
+                    locations=conflict.locations,
+                )
+                continue
+            c_a = getattr(data.activities.get(a), "contract_number", None)
+            c_b = getattr(data.activities.get(b), "contract_number", None)
+            n_a = access_nights.get((a, w))
+            n_b = access_nights.get((b, w))
+            if (c_a is not None and c_a == c_b and n_a is not None and n_a == n_b) or (c_a is None and c_b is None):
                 error(
                     "closure_buffer", "Conflicting activities without shared possession",
                     activities=[a, b], week=w,

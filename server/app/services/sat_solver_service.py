@@ -245,7 +245,8 @@ def add_closure_and_buffer_constraints(
     """Prevent independent conflicting possessions from running in the same week.
 
     Uses the preprocessed relation (R_b intersects C_a) or (R_a intersects
-    C_b) or (B_a intersects B_b), including live mirror/interchange effects.
+    C_b), including live mirror/interchange effects. Touching buffers (B_a & B_b)
+    without route intrusion do not conflict.
     For each conflict pair, y_aw + y_bw <= 1 unless the pair co-shares.
 
     The rule-6 exemption is interpreted pairwise: sharing at least one

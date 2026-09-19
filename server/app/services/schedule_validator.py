@@ -217,6 +217,48 @@ def validate_schedule(
                         week=min_w,
                     )
 
+    # 5. Rule 4: Work Buffer and Live Closure
+    act_loc_group: dict[tuple[str, int], set[tuple[str, str]]] = defaultdict(set)
+    for row in occupancy_rows:
+        aid = str(row["activity_id"])
+        w = int(row["week"])
+        loc = str(row["location_id"])
+        group = str(row["co_share_group"])
+        act_loc_group[aid, w].add((loc, group))
+
+    access_nights = {
+        (str(r["activity_id"]), int(r["week"])): int(r["access_night"])
+        for r in access_rows
+    }
+
+    for conflict in data.conflicts:
+        a, b = conflict.activities
+        common_weeks = sorted(weeks_by_activity.get(a, set()) & weeks_by_activity.get(b, set()))
+        for w in common_weeks:
+            if act_loc_group[a, w] & act_loc_group[b, w]:
+                continue
+            is_live_a = getattr(data.activities.get(a), "nature_of_activity", "") == "Live"
+            is_live_b = getattr(data.activities.get(b), "nature_of_activity", "") == "Live"
+            if is_live_a or is_live_b:
+                log_violation(
+                    rule="closure_buffer",
+                    detail=f"Activity inside another group's live closure zone in week {w}: {a} vs {b} at {conflict.locations}",
+                    week=w,
+                    activity_id=a,
+                )
+                continue
+            c_a = getattr(data.activities.get(a), "contract_number", None)
+            c_b = getattr(data.activities.get(b), "contract_number", None)
+            n_a = access_nights.get((a, w))
+            n_b = access_nights.get((b, w))
+            if (c_a is not None and c_a == c_b and n_a is not None and n_a == n_b) or (c_a is None and c_b is None):
+                log_violation(
+                    rule="closure_buffer",
+                    detail=f"Conflicting activities without shared possession on same access night in week {w}: {a} vs {b} at {conflict.locations}",
+                    week=w,
+                    activity_id=a,
+                )
+
     # 6. Rule 5: Location Occupancy & Legal Mixes & Supply Capacity
     occupancy_by_loc_week: dict[tuple[str, int], dict[str, list[str]]] = defaultdict(lambda: defaultdict(list))
     for row in occupancy_rows:
