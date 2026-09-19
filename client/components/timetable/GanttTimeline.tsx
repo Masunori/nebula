@@ -130,9 +130,10 @@ export function GanttTimeline({ rows, highlightCellKey, onSelectActivity, editab
               <React.Fragment key={gk}>
                 {/* Group header row */}
                 <tr>
-                  <td className="location-cell group-header" colSpan={31}>
+                  <td className="location-cell group-header">
                     {line} — {bound}
                   </td>
+                  {WEEKS.map(week => <td key={week} className="group-divider" />)}
                 </tr>
                 {locs.map(loc => {
                   const weekMap = locMap.get(loc)!;

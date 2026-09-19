@@ -609,6 +609,7 @@ img, svg { display: block; max-width: 100%; }
   font-size: 11px;
   letter-spacing: 0.08em;
 }
+.gantt-table td.group-divider { background: var(--teal-900); border-color: var(--teal-800); min-height: 24px; }
 .gantt-block {
   display: flex; align-items: center;
   padding: 2px 5px;
