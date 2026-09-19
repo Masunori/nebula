@@ -480,6 +480,26 @@ export function useDatabaseStore() {
     stageUpdateActivity(targetId, { predecessor_activity_id: null });
   }, [stageUpdateActivity]);
 
+  // Sync live state from database API
+  const syncFromDatabase = useCallback(async () => {
+    try {
+      const res = await fetch("/api/database/topology");
+      if (res.ok) {
+        const top = await res.json();
+        if (top && Array.isArray(top.lines) && Array.isArray(top.stations)) {
+          setState((prev) => ({
+            ...prev,
+            lines: top.lines,
+            stations: top.stations,
+            sectors: top.sectors || prev.sectors,
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn("syncFromDatabase error:", e);
+    }
+  }, []);
+
   return {
     state,
     overview,
@@ -509,5 +529,6 @@ export function useDatabaseStore() {
     loadPresetDataset,
     parseAndIngestCsvFiles,
     validateUpload,
+    syncFromDatabase,
   };
 }

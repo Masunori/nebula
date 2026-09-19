@@ -478,12 +478,12 @@ export function NetworkTopologyViewer({
                       fill="none"
                       stroke="#a855f7"
                       strokeWidth="2"
-                      opacity="0.4"
-                      className="animate-pulse"
+                      opacity="0.5"
+                      className="hub-pulse-ring pointer-events-none"
                     />
                   )}
 
-                  {/* Main Station Circle */}
+                  {/* Main Station Circle - Anchored without scale/jumping */}
                   <circle
                     cx={node.x}
                     cy={node.y}
@@ -491,7 +491,7 @@ export function NetworkTopologyViewer({
                     fill={fillColor}
                     stroke={strokeColor}
                     strokeWidth={isHub ? 3 : 2.5}
-                    className="transition-transform group-hover:scale-110"
+                    className="station-node-anchored cursor-pointer"
                   />
 
                   {/* Station Code Label */}

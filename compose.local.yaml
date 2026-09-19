@@ -30,6 +30,8 @@ services:
         environment:
             NODE_ENV: development
             API_INTERNAL_URL: http://server:8000
+            SERVER_URL: http://server:8000
+            DATABASE_URL: postgresql://${POSTGRES_USER:-nebula_user}:${POSTGRES_PASSWORD:-nebula_password}@database:5432/${POSTGRES_DB:-nebula}
         volumes:
             - ./client:/app
             - client_node_modules:/app/node_modules
