@@ -71,6 +71,29 @@ class ScheduleValidatorTests(unittest.TestCase):
         rules = [v["rule"] for v in result["hard_violations"]]
         self.assertIn("workfront", rules)
 
+    def test_detects_live_closure_violation(self):
+        # A074 is Live at H01_H02 in week 21, closing Line Beta at S15/S16.
+        # Moving A001 (which operates at S15/S16) to week 21 creates an intrusion into A074's closure.
+        tampered_access = [dict(r) for r in self.access_rows]
+        for row in tampered_access:
+            if row["activity_id"] == "A001":
+                row["week"] = 21
+        tampered_occ = [dict(r) for r in self.occupancy_rows]
+        for row in tampered_occ:
+            if row["activity_id"] == "A001":
+                row["week"] = 21
+
+        result = validate_schedule(
+            self.data,
+            tampered_access,
+            tampered_occ,
+            self.results_rows,
+            scenario="A",
+        )
+        self.assertFalse(result["feasible"])
+        rules = [v["rule"] for v in result["hard_violations"]]
+        self.assertIn("closure_buffer", rules)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -82,9 +82,7 @@ class PreprocessingTests(unittest.TestCase):
             set(a.B),
             {
                 "SEC:BET:H02_S15:EB",
-                "PLAT:BET:H02:EB",
                 "SEC:BET:S17_S18:EB",
-                "PLAT:BET:S18:EB",
             },
         )
         self.assertEqual(a.INT, [])
@@ -93,10 +91,28 @@ class PreprocessingTests(unittest.TestCase):
     def test_live_interchange_and_mirror(self):
         a = preprocess_csv_files(self.files).activities["A074"]
         self.assertEqual(a.affected_lines, ["ALP", "BET"])
-        self.assertEqual(len(a.INT), 6)
+        self.assertEqual(len(a.INT), 22)
         self.assertIn("SEC:ALP:S03_S04:WB", a.MIR)
         self.assertIn("PLAT:BET:H01:WB", a.INT)
         self.assertEqual(set(a.C), set(a.R) | set(a.X))
+
+    def test_external_validator_interchange_closure_regressions(self):
+        data = preprocess_csv_files(self.files)
+        cases = [
+            ("A074", "A001", {"PLAT:BET:S15:EB", "PLAT:BET:S16:EB", "SEC:BET:S15_S16:EB"}),
+            ("A074", "A011", {"PLAT:BET:S15:EB", "PLAT:BET:S16:EB", "SEC:BET:S15_S16:EB"}),
+            ("A074", "A021", {"PLAT:BET:S13:WB"}),
+            ("A074", "A039", {"PLAT:BET:S13:WB", "PLAT:BET:S14:WB", "SEC:BET:S13_S14:WB"}),
+            ("A075", "A023", {"PLAT:ALP:S03:WB", "PLAT:ALP:S04:WB", "SEC:ALP:S03_S04:WB"}),
+            ("A075", "A025", {"PLAT:ALP:S03:EB"}),
+        ]
+        for source, target, expected in cases:
+            with self.subTest(source=source, target=target):
+                self.assertEqual(set(data.activities[source].INT) & set(data.activities[target].R), expected)
+                self.assertIn(target, data.conflicts_by_activity[source])
+        # Expansion stops after two sectors; it must not close the whole line.
+        self.assertNotIn("PLAT:BET:S17:EB", data.activities["A074"].INT)
+        self.assertNotIn("PLAT:ALP:S02:WB", data.activities["A075"].INT)
 
     def test_clipped_buffers_and_reversed_route(self):
         self.edit(
@@ -107,7 +123,7 @@ class PreprocessingTests(unittest.TestCase):
         )
         a = preprocess_csv_files(self.files).activities["A001"]
         self.assertEqual(len(a.R), 5)
-        self.assertEqual(set(a.B), {"SEC:BET:S13_S14:WB", "PLAT:BET:S14:WB"})
+        self.assertEqual(set(a.B), {"SEC:BET:S13_S14:WB"})
 
     def test_platform_only_and_non_live_others(self):
         self.edit(
@@ -131,7 +147,6 @@ class PreprocessingTests(unittest.TestCase):
                 if (
                     set(aa.R) & set(bb.C)
                     or set(bb.R) & set(aa.C)
-                    or set(aa.B) & set(bb.B)
                 ):
                     expected.add((a, b))
         self.assertEqual({tuple(c.activities) for c in data.conflicts}, expected)

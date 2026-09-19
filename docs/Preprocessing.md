@@ -85,7 +85,10 @@ should be checked against it if it becomes available:
 3. When `opposite_bound_required=1`, the entire buffered interval is mirrored.
    For Live work, reaching either H01/H02 platform or the H01–H02 tunnel with that
    interval closes all three corresponding locations on **both bounds of the
-   other line**. That cross-line closure is not recursively buffered.
+   other line**, expanded by the configured buffer radius on that line, clipped
+   at its termini. External-validator failures for A074/A075 showed that closing
+   only the three interchange locations omitted adjacent closure zones. The
+   expansion does not recursively cross back to the original line.
 4. A planning week is seven days anchored at `horizon_start`. Release dates map
    to their containing week, consistent with the planned-start-week rule; dates
    before the horizon map to week one. Completion occurs on the last day of a week.

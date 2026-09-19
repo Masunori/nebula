@@ -1,0 +1,32 @@
+{
+  "scenario": "B",
+  "feasible": true,
+  "hard_violations": [],
+  "soft_scores": {
+    "scenario": "B",
+    "overrun_days_total": 0,
+    "contracts_overrunning": 0,
+    "earliness_days_total": 1736,
+    "excess_access_nights_total": 0,
+    "eclo_nights_total": 10,
+    "priority_overrun": {
+      "1": 0,
+      "2": 0,
+      "3": 0
+    },
+    "priority_weighted_score": 0.0,
+    "objective_score": 50
+  },
+  "detail": {
+    "solver_status": "OPTIMAL",
+    "wall_time_seconds": 32.761745097,
+    "objective_optimized": true,
+    "validation_scope": "Implemented CP-SAT model; pairwise co-sharing interpretation",
+    "capacity_hotspots": [],
+    "nights_scheduled": 198,
+    "eclo_nights": 10,
+    "csv_written": true,
+    "output_directory": "server/data/solver_runs/20260919_090340/B",
+    "objective_bound": 50.0
+  }
+}

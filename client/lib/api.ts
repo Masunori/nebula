@@ -233,16 +233,17 @@ export async function updateDraft(
 
 export async function validateDraft(runId: string): Promise<ValidationResult> {
   await delay(1200);
-  return buildValidationResult(runId);
+  return buildValidationResult(runId, PLANNING_RUNS.find(run => run.runId === runId));
 }
 
 export async function approveDraft(runId: string): Promise<PlanningRun> {
   await delay(600);
   const base = PLANNING_RUNS.find(r => r.runId === runId);
+  if (!base) throw new Error('Planning run not found.');
   const baseRev = base?.revisionNumber ?? '1';
   const nextRev = String(Math.ceil(parseFloat(baseRev)) + 1);
-  return {
-    ...(base ?? PLANNING_RUNS[0]),
+  const approvedRun: PlanningRun = {
+    ...base,
     runId: `${runId}-approved`,
     revisionNumber: nextRev,
     revisionType: 'approved',
@@ -250,6 +251,8 @@ export async function approveDraft(runId: string): Promise<PlanningRun> {
     status: 'ready',
     updatedAt: new Date().toISOString(),
   };
+  PLANNING_RUNS.unshift(approvedRun);
+  return approvedRun;
 }
 
 export async function reoptimizeRevision(runId: string, disruption?: DisruptionEvent): Promise<PlanningRun> {

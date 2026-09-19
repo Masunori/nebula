@@ -7,7 +7,7 @@ This document explains how the scheduling problem is formalised to pass into a C
 - $a \in A$: activities
 - $c \in C$: contracts
 - $w \in W = \{1, ..., T\}$: planning weeks (`06_PARAMETERS.horizon_weeks`)
-- $l \in L$: physical locations (tunnel sectors + platform sectors)
+- $l \in L = L_{\text{sec}} \cup L_{\text{plat}}$: physical locations partitioned into track tunnel sectors ($L_{\text{sec}}$) and station platform sectors ($L_{\text{plat}}$)
 - $h \in H$: `(contract_number, activity_type)` groups
 - $n \in N_c = \{1, ..., M_c\}$: local access-night indices available to contract $c$
 - $g \in G_l$: candidate possession groups at location $l$
@@ -36,28 +36,30 @@ For location $l$:
 
 From its start/end locations, preprocess $R_a \subseteq L$, which are all actual tunnel/platform locations occupied by activity $a$.
 
-### Buffer
+### 3.1. Buffer
 
-`2` refers to two adjacent sectors on both sides
-`1` refers to 1 adjacent sector on both sides
+The protective buffer $B_a \subseteq L_{\text{sec}}$ consists of running track tunnel sectors adjacent to the work boundaries to ensure block separation:
+- `2` refers to two adjacent tunnel sectors on both sides
+- `1` refers to one adjacent tunnel sector on both sides
+- Station platforms outside $R_a$ are not absorbed into $B_a$.
 
 $$
 B_a = \begin{cases}
-  2 & \text{if } Live \\
-  1 & \text{if } NonLive(Consist) \\
+  \text{up to 2 adjacent tunnel sectors on both sides} & \text{if } Live \\
+  \text{up to 1 adjacent tunnel sector on both sides} & \text{if } NonLive(Consist) \\
   \empty & \text{if } NonLive(Others)
 \end{cases}
 $$
 
-### Live mirror
+### 3.2. Live mirror
 
-If the work is live, define $MIR_a$ as the corresponding locations closed on the opposite bound.
+If the work is live, cutting third-rail traction power mirrors the de-energised track and platform closures onto the opposite bound ($MIR_a$).
 
-### Live interchange effect
+### 3.3. Live interchange effect
 
-If a Live activity affects H01-H02, $INT_a$ contains the corresponding other-line H01-H02 tunnel/platform closures.
+If a Live activity affects H01-H02, cutting traction power at the interchange affects both lines' tunnels. $INT_a$ contains the corresponding other-line H01-H02 tunnel/platform closures on both bounds, expanded by the 2-sector buffer radius on that line and clipped at its termini (strictly enforced by the competition validator).
 
-### External exclusion footprint
+### 3.4. External exclusion footprint
 
 We finally define the external exclusion footprint
 
@@ -73,7 +75,7 @@ $$
 
 ## 4. Decision variables
 
-### Activity access assignment
+### 4.1. Activity access assignment
 
 $$x_{awn} \in \{0, 1\}$$
 
@@ -93,7 +95,7 @@ $$y_{aw} \in \{0, 1\} = \sum_{n \in N_{h(a)}} x_{awn}$$
 
 meaning activity $a$ operates somewhere in week $w$.
 
-### ECLO
+### 4.2. ECLO
 
 $$e_{awn} \in \{0, 1\}$$
 
@@ -107,7 +109,7 @@ We enforce the fact that an activity can only use ECLO if it is already granted 
 
 $$e_{awn} \leq x_{awn}$$
 
-### Location possession/co-sharing assignment
+### 4.3. Location possession/co-sharing assignment
 For every $l \in R_a$,
 
 $$z_{alwg} \in \{0, 1\}$$
@@ -144,7 +146,7 @@ is the number of weekly access-nights slots consumed at location $l$.
 
 ## 5. The 10 hard constraints
 
-### Workload conservation
+### 5.1. Workload conservation
 
 A normal access contributes $1$, an ECLO access contributes $1.5$, so
 
@@ -154,11 +156,11 @@ For CP-SAT, "integer-ize" the constraint:
 
 $$2 \sum_{w,n} x_{awn} + \sum_{w,n} e_{awn} \geq 2q_a $$
 
-### Planned start date
+### 5.2. Planned start date
 
 $$x_{awn} = 0 \forall w < r_a$$
 
-### Predecessor precendence
+### 5.3. Predecessor precendence
 
 Define
 
@@ -177,28 +179,29 @@ or since weeks are integers,
 
 $$S_a \geq F_b + 1$$
 
-### Closures and buffers
+### 5.4. Closures and buffers
 
-If $a$ operates in week $w$, its actual working locations $R_a$ are occupied, where locations in $X_a$ are unavailable to external work according to its buffer and live closure rules.
+If activity $a$ operates, its working route $R_a$ is actively occupied, while locations in its external exclusion footprint $X_a$ are protected from external intrusion.
 
-We define the relation
+We define the spatial interference relation:
 
-$$C_{ab} = 1$$
+$$C_{ab} = 1 \iff (R_b \cap C_a \neq \empty) \lor (R_a \cap C_b \neq \empty)$$
 
-if and only if the safety foorpeints of $a$ and $b$ conflict when they are independent possessions
+where $C_a = R_a \cup X_a$.
 
-$$(R_b \cap C_a \neq \empty) \lor (R_a \cap C_b \neq \empty) \lor (B_a \cap B_b \neq \empty)$$
+**Key Rule Interpretation:**
+- Interference occurs when an activity's actual work site ($R_b$) enters another activity's closure/buffer footprint ($C_a$), matching the competition validator rule `[Activity inside another group's closure zone]`.
+- The term $(B_a \cap B_b \neq \empty)$ is intentionally **omitted**: when two disjoint activities' buffers touch in an unoccupied intermediate sector, the intermediate sector serves as the required physical separation buffer between the two worksites (Rule 4 canonical example: an activity whose buffer reaches S02 allows the next activity on that bound to start no earlier than S03).
 
-### Possession locations and legal mixes
+### 5.5. Possession locations and legal mixes
 For each $(l, w, g)$, define
 
 $$PM_{lwg} = \sum_{a:l \in R_a, \tau_a = PM} z_{alwg}$$
 $$PC_{lwg} = \sum_{a:l \in R_a, \tau_a = PC} z_{alwg}$$
 $$C_{lwg} = \sum_{a:l \in R_a, \tau_a = C} z_{alwg}$$
 
-Each possession must be one of ${PM}$, ${PC + 0...3C}$ or ${1...4C}$.
-
-A compact encoding is 
+Each possession slot $g \in G_l$ represents one distinct night of track possession at location $l$ in week $w$, packed up to legal mix limits:
+one sole $PM$, one $PC$ with $\le 3$ $C$, or $\le 4$ $C$:
 
 $$(PM_{lwg} + PC_{lwg} \leq 1) \land (C_{lwg} + PC_{lwg} + 4PM_{lwg} \leq 4)$$
 
@@ -207,25 +210,27 @@ Which means
 - If $PC=1$ then 3 or less $C$
 - If $C$ only then 4 or less $C$
 
-The location also has only $K_l$ nominal weekly slots:
+The total number of distinct possession slots used at location $l$ in week $w$ is:
 
 $$U_{lw} = \sum_{g} u_{lwg}$$
 
-Scenario-specific rules will determine the relationship between $U_{lw}$ and $K_l$.
+which represents the number of access-nights consumed at location $l$, bounded by the nominal weekly supply $K_l$ according to scenario-specific rules.
 
-### Co-sharing exception
+### 5.6. Co-sharing exemption & separate possession nights
 
-This may override [Rule 4 - Closures and buffers](#closures-and-buffers).
+Under Rule 6, possession groups and spatial conflicts interact at two levels:
 
-If 
+1. **Direct Worksite Co-Sharing ($R_a \cap R_b \neq \empty$)**:
+   If $a$ and $b$ share a physical working location $l \in R_a \cap R_b$ in week $w$, they may co-share the exact same possession slot:
+   $$z_{alwg} = z_{blwg} = 1$$
+   When this holds, $a$ and $b$ share one possession night at $l$ and are exempt from each other's closure/buffer restrictions, subject to the legal mix constraints of Rule 5.
+   Alternatively, if they do not co-share, they must occupy distinct possession slots ($g_a \neq g_b$) representing separate nights within that week's allocation $K_l$.
 
-$$z_{alwg} = z_{blwg} = 1$$
+2. **External Exclusion Intrusion ($R_b \cap X_a \neq \empty$)**:
+   If activity $b$ works inside the buffer, mirror, or interchange zone of activity $a$ without sharing working tracks ($R_a \cap R_b = \empty$), $b$ may **not** operate concurrently on the same night as $a$.
+   However, activities $a$ and $b$ are permitted to run within the same calendar week $w$, provided they take place on **separate possession nights** (e.g. $a$ on night $t_1$, $b$ on night $t_2$), since night maintenance closes sectors only on the occupied night.
 
-then $a$ and $b$ have the same $(l, w, g)$ and therefore consume one possession/access-night slot at the location.
-
-When this happens, the mutual closure/buffer restrictions for $a$ and $b$ are waived, subject to Rule 5 being satisfied.
-
-### Weekly allocation
+### 5.7. Weekly allocation
 
 For group $h$, only $M_h$ distinct local access nights may be used.
 
@@ -247,7 +252,7 @@ $$n \in \{1, ..., M_h\}$$
 
 this upper bound is largely encoded directly by the domain; $v$ is useful for explicit bookkeeping.
 
-### Workfronts
+### 5.8. Workfronts
 
 For each $h, w, n$:
 
@@ -255,7 +260,7 @@ $$\sum_{a: h(a) = h} x_{awn} \leq F_h$$
 
 Thus, the theoretical maximum number of activity-accesses for group $h$ in one week is $M_hF_h$.
 
-### Early closure, late opening
+### 5.9. Early closure, late opening
 
 Already captured by $e_{awn}$, where we enforce
 
@@ -265,7 +270,7 @@ and work delivered by one access is
 
 $$x_{awn} + \frac{1}{2} e_{awn}$$
 
-### ECLO continuity window (Scenario C)
+### 5.10. ECLO continuity window (Scenario C)
 
 For each line $\lambda$, we define $H_\lambda$ as the first week of its ECLO window.
 
@@ -350,7 +355,7 @@ $$E = \sum_{a, w, n} e_{awn}$$
 
 ## 10. Scenarios
 
-### Scenario A - Strict supply, flexible schedule
+### 10.1. Scenario A - Strict supply, flexible schedule
 
 Additional hard constraints:
 
@@ -364,7 +369,7 @@ Objective:
 
 $$\min Score_A = P$$
 
-### Scenario B - Strict schedule, flexible supply
+### 10.2. Scenario B - Strict schedule, flexible supply
 
 Hard deadline:
 
@@ -376,7 +381,7 @@ Objective:
 
 $$\min Score_B = 7X + 5E$$
 
-### Scenario C - Balanced/Elastic
+### 10.3. Scenario C - Balanced/Elastic
 
 Supply may exceed nominal capacity by at most one possession slot per location-week
 

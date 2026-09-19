@@ -578,9 +578,11 @@ export function buildScheduleDownloads(run: PlanningRun): ScheduleDownload[] {
 
 // ─── Validation result ────────────────────────────────────────────────────────
 
-export function buildValidationResult(runId: string): ValidationResult {
+export function buildValidationResult(runId: string, run?: PlanningRun): ValidationResult {
   const isInvalid = runId === 'run-002';
   const timestamp = new Date().toISOString();
+  const scenario = run?.scenario ?? (runId === 'run-001' ? 'A' : runId === 'run-002' ? 'B' : 'C');
+  const revisionNumber = run?.revisionNumber ?? (runId === 'run-001' ? '12' : runId === 'run-002' ? '12.1' : '11');
 
   const log: ValidationLogEntry[] = [
     {
@@ -675,12 +677,12 @@ export function buildValidationResult(runId: string): ValidationResult {
 
   return {
     runId,
-    revisionNumber: runId === 'run-001' ? '12' : runId === 'run-002' ? '12.1' : '11',
-    scenario: runId === 'run-001' ? 'A' : runId === 'run-002' ? 'B' : 'C',
+    revisionNumber,
+    scenario,
     feasible: !isInvalid,
     hardViolations,
     softScores: {
-      scenario: runId === 'run-001' ? 'A' : runId === 'run-002' ? 'B' : 'C',
+      scenario,
       overrunDaysTotal: isInvalid ? 126 : 0,
       contractsOverrunning: isInvalid ? 7 : 0,
       earlinessTotal: 0,

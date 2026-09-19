@@ -84,3 +84,6 @@ Thumbs.db
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# Others
+server/data/actual_output/*

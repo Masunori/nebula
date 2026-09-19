@@ -413,9 +413,11 @@ def _build_conflicts(
     """Find spatial conflicts between independent activity possessions.
 
     A pair conflicts when either working route intersects the other's total
-    footprint, or their buffers intersect. Candidate pairs are restricted to
-    activities sharing an affected location. These are not unconditional
-    scheduling bans: the future solver must apply legal co-sharing exceptions.
+    footprint: (R_b & C_a) or (R_a & C_b). Touching buffers (B_a & B_b) without
+    route intrusion do not conflict, providing legal safety separation.
+    Candidate pairs are restricted to activities sharing an affected location.
+    These are not unconditional scheduling bans: the solver and validator
+    must apply legal co-sharing exceptions.
 
     Args:
         prepared: Activity ID -> prepared row containing R (working locations),
@@ -443,11 +445,7 @@ def _build_conflicts(
     conflicts_by_activity = {a: [] for a in prepared}
     for a, b in sorted(candidates):
         left, right = sets[a], sets[b]
-        overlap = (
-            (right["R"] & left["C"])
-            | (left["R"] & right["C"])
-            | (left["B"] & right["B"])
-        )
+        overlap = (right["R"] & left["C"]) | (left["R"] & right["C"])
         if overlap:
             conflicts.append(
                 {
@@ -480,7 +478,8 @@ def _build_activity_footprint(
     count, include platforms, and stop at line termini. When required, the
     entire buffered interval is mirrored to the opposite bound. Live work
     reaching H01/H02 also closes their platforms and connecting tunnel on both
-    bounds of other lines; that cross-line closure is not recursively buffered.
+    bounds of other lines, including the configured buffer around that other
+    line's interchange interval. This expansion does not recursively cross back.
     These are the spatial conventions documented in docs/Preprocessing.md.
 
     Args:
@@ -558,7 +557,7 @@ def _build_activity_footprint(
         max(0, lower_station - radius),
         min(len(station_order[line]) - 1, upper_station + radius),
     )
-    buffer = extended - route
+    buffer = {loc for loc in (extended - route) if loc.startswith("SEC:")}
     mirror = (
         {opposite[location_id] for location_id in extended}
         if rule["opposite_bound_required"]
@@ -581,7 +580,14 @@ def _build_activity_footprint(
                             candidates <= locations.keys(),
                             "Live interchange requires H01/H02 locations on both lines",
                         )
-                        interchange.update(candidates)
+                        other_lower = min(spans[loc][2] for loc in candidates)
+                        other_upper = max(spans[loc][3] for loc in candidates)
+                        interchange.update(interval(
+                            other,
+                            other_bound,
+                            max(0, other_lower - radius),
+                            min(len(station_order[other]) - 1, other_upper + radius),
+                        ))
     exclusion = buffer | mirror | interchange
     footprint = route | exclusion
     affected_lines = sorted({spans[location_id][0] for location_id in footprint})

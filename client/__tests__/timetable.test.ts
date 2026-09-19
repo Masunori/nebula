@@ -8,6 +8,7 @@ import {
 } from '@/lib/timetable';
 import type { TimetableRow } from '@/types/planning';
 import { buildScheduleDownloads, PLANNING_RUNS } from '@/lib/mockPlanningData';
+import { approveDraft, getRun } from '@/lib/api';
 
 function makeRow(overrides: Partial<TimetableRow>): TimetableRow {
   return {
@@ -135,5 +136,16 @@ describe('buildScheduleDownloads', () => {
     expect(downloads[0].content.split('\n')[0]).toBe('activity_id,access_seq,week,eclo,access_night');
     expect(downloads[1].content.split('\n')[0]).toBe('activity_id,week,location_id,co_share_group');
     expect(downloads[2].content.split('\n')[0]).toBe('scenario,contract_number,simulated_completion_date,overrun_days');
+  });
+});
+
+describe('approveDraft', () => {
+  it('keeps the scenario on the approved revision', async () => {
+    const approvedRun = await approveDraft('run-003');
+    const storedRun = await getRun(approvedRun.runId);
+
+    expect(approvedRun.scenario).toBe('C');
+    expect(storedRun?.scenario).toBe('C');
+    expect(storedRun?.revisionType).toBe('approved');
   });
 });
