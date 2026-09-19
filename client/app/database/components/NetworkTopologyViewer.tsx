@@ -62,74 +62,79 @@ export function NetworkTopologyViewer({
     return entry ? entry.supply_capacity : secId.includes("H01_H02") ? 1 : 4;
   };
 
-  // Node position calculation for SVG Railway Graph Visualizer
+  // Distinct line colors and glow definitions
+  const LINE_THEMES: Record<string, { stroke: string; glow: string; filterId: string; fill: string; light: string; name: string }> = {
+    ALP: { stroke: "#06b6d4", glow: "rgba(6, 182, 212, 0.4)", filterId: "cyan-glow", fill: "#0891b2", light: "#cffafe", name: "Line Alpha" },
+    BET: { stroke: "#10b981", glow: "rgba(16, 185, 129, 0.4)", filterId: "emerald-glow", fill: "#059669", light: "#d1fae5", name: "Line Beta" },
+    GAM: { stroke: "#a855f7", glow: "rgba(168, 85, 247, 0.4)", filterId: "purple-glow", fill: "#9333ea", light: "#f3e8ff", name: "Line Gamma" },
+    DEL: { stroke: "#f59e0b", glow: "rgba(245, 158, 11, 0.4)", filterId: "amber-glow", fill: "#d97706", light: "#fef3c7", name: "Line Delta" },
+    EPS: { stroke: "#ec4899", glow: "rgba(236, 72, 153, 0.4)", filterId: "pink-glow", fill: "#db2777", light: "#fce7f3", name: "Line Epsilon" },
+  };
+
+  const getLineTheme = (lineCode: string) => {
+    return (
+      LINE_THEMES[lineCode] || {
+        stroke: "#38bdf8",
+        glow: "rgba(56, 189, 248, 0.4)",
+        filterId: "cyan-glow",
+        fill: "#0284c7",
+        light: "#e0f2fe",
+        name: `Line ${lineCode}`,
+      }
+    );
+  };
+
+  // Unique line codes present in the active dataset
+  const uniqueLineCodes = useMemo(() => {
+    const set = new Set<string>();
+    stations.forEach((s) => set.add(s.line_code));
+    return Array.from(set).sort();
+  }, [stations]);
+
+  const numLines = Math.max(1, uniqueLineCodes.length);
+  const trackSpacing = numLines <= 2 ? 160 : 95;
+  const hubY = numLines <= 2 ? 230 : 70 + ((numLines - 1) / 2) * trackSpacing;
+  const svgHeight = Math.max(460, 70 + numLines * trackSpacing + 50);
+
+  // Dynamic multi-track node positioning
   const nodePositions = useMemo(() => {
     const positions = new Map<string, { x: number; y: number; isInterchange: boolean; name: string; line: string }>();
 
-    // Stations for ALP
-    const alpStations = stations.filter((s) => s.line_code === "ALP").sort((a, b) => a.seq_order - b.seq_order);
-    alpStations.forEach((st, idx) => {
-      let x = 60 + idx * 105;
-      let y = 140;
+    uniqueLineCodes.forEach((lineCode, lineIdx) => {
+      const lineStations = stations
+        .filter((s) => s.line_code === lineCode)
+        .sort((a, b) => a.seq_order - b.seq_order);
 
-      if (st.station_id === "H01") {
-        x = 480;
-        y = 230;
-      } else if (st.station_id === "H02") {
-        x = 600;
-        y = 230;
-      } else if (idx > 5) {
-        x = 600 + (idx - 5) * 105;
-      }
+      const lineY = numLines <= 2
+        ? (lineCode === "ALP" ? 140 : 320)
+        : 70 + lineIdx * trackSpacing;
 
-      positions.set(`ALP:${st.station_id}`, {
-        x,
-        y,
-        isInterchange: st.station_id === "H01" || st.station_id === "H02",
-        name: st.station_name,
-        line: "ALP",
-      });
-    });
+      lineStations.forEach((st, idx) => {
+        let x = 60 + idx * 105;
+        let y = lineY;
 
-    // Stations for BET
-    const betStations = stations.filter((s) => s.line_code === "BET").sort((a, b) => a.seq_order - b.seq_order);
-    betStations.forEach((st, idx) => {
-      let x = 60 + idx * 105;
-      let y = 320;
+        if (st.station_id === "H01") {
+          x = 480;
+          y = hubY;
+        } else if (st.station_id === "H02") {
+          x = 600;
+          y = hubY;
+        } else if (idx >= 6) {
+          x = 600 + (idx - 5) * 105;
+        }
 
-      if (st.station_id === "H01") {
-        x = 480;
-        y = 230;
-      } else if (st.station_id === "H02") {
-        x = 600;
-        y = 230;
-      } else if (idx > 5) {
-        x = 600 + (idx - 5) * 105;
-      }
-
-      positions.set(`BET:${st.station_id}`, {
-        x,
-        y,
-        isInterchange: st.station_id === "H01" || st.station_id === "H02",
-        name: st.station_name,
-        line: "BET",
-      });
-    });
-
-    // Additional lines if any (e.g. GAM)
-    const otherStations = stations.filter((s) => s.line_code !== "ALP" && s.line_code !== "BET");
-    otherStations.forEach((st, idx) => {
-      positions.set(`${st.line_code}:${st.station_id}`, {
-        x: 60 + (idx % 10) * 105,
-        y: 400 + Math.floor(idx / 10) * 80,
-        isInterchange: false,
-        name: st.station_name,
-        line: st.line_code,
+        positions.set(`${lineCode}:${st.station_id}`, {
+          x,
+          y,
+          isInterchange: st.station_id === "H01" || st.station_id === "H02",
+          name: st.station_name,
+          line: lineCode,
+        });
       });
     });
 
     return positions;
-  }, [stations]);
+  }, [stations, uniqueLineCodes, numLines, trackSpacing, hubY]);
 
   // Filtered sectors to render
   const visibleSectors = useMemo(() => {
@@ -210,14 +215,15 @@ export function NetworkTopologyViewer({
         {/* Right: Legend & Zoom Controls */}
         <div className="flex items-center gap-4">
           <div className="hidden lg:flex items-center gap-3 text-[11px]" style={{ color: "var(--ink-500)" }}>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: "#06b6d4" }}></span>
-              Line Alpha
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: "#10b981" }}></span>
-              Line Beta
-            </span>
+            {uniqueLineCodes.map((c) => {
+              const th = getLineTheme(c);
+              return (
+                <span key={c} className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: th.stroke }}></span>
+                  {th.name}
+                </span>
+              );
+            })}
             <span className="flex items-center gap-1">
               <span className="w-2.5 h-2.5 rounded-full inline-block ring-2 ring-purple-400/40" style={{ backgroundColor: "#a855f7" }}></span>
               Interchange Hub ★
@@ -331,7 +337,7 @@ export function NetworkTopologyViewer({
         )}
 
         <svg
-          viewBox="0 0 1080 460"
+          viewBox={`0 0 1080 ${svgHeight}`}
           style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center center", transition: "transform 0.15s ease-out" }}
           className="w-full h-auto min-w-[900px] select-none"
         >
@@ -341,12 +347,21 @@ export function NetworkTopologyViewer({
               <circle cx="12" cy="12" r="1.2" fill="var(--border-default)" />
             </pattern>
 
-            {/* Glow filters */}
+            {/* Glow filters for all lines */}
             <filter id="cyan-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#06b6d4" floodOpacity="0.6" />
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#06b6d4" floodOpacity="0.7" />
             </filter>
             <filter id="emerald-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#10b981" floodOpacity="0.6" />
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#10b981" floodOpacity="0.7" />
+            </filter>
+            <filter id="purple-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#a855f7" floodOpacity="0.7" />
+            </filter>
+            <filter id="amber-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#f59e0b" floodOpacity="0.7" />
+            </filter>
+            <filter id="pink-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#ec4899" floodOpacity="0.7" />
             </filter>
             <filter id="rose-glow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#f43f5e" floodOpacity="0.8" />
@@ -354,7 +369,7 @@ export function NetworkTopologyViewer({
           </defs>
 
           {/* Background grid */}
-          <rect width="1080" height="460" fill="url(#dot-grid)" />
+          <rect width="1080" height={svgHeight} fill="url(#dot-grid)" />
 
           {/* 1. SECTOR EDGES (TRACKS) */}
           <g className="edges">
@@ -366,13 +381,12 @@ export function NetworkTopologyViewer({
               const isBottleneck = sector.sector_id.includes("H01_H02");
               const isSelected = selectedSectorId === sector.sector_id;
               const cap = getSectorCapacity(sector.sector_id, selectedBound);
-              const isAlpha = sector.line_code === "ALP";
+              const theme = getLineTheme(sector.line_code);
 
-              const strokeColor = isBottleneck
-                ? "#f43f5e"
-                : isAlpha
-                ? "#06b6d4"
-                : "#10b981";
+              const strokeColor = isBottleneck ? "#f43f5e" : theme.stroke;
+              const filterUrl = isSelected || isBottleneck
+                ? isBottleneck ? "url(#rose-glow)" : `url(#${theme.filterId})`
+                : undefined;
 
               // Curving path calculation
               const dx = toPos.x - fromPos.x;
@@ -413,8 +427,8 @@ export function NetworkTopologyViewer({
                     stroke={strokeColor}
                     strokeWidth={isSelected ? 6 : isBottleneck ? 4 : 3}
                     strokeDasharray={isBottleneck ? "6,4" : undefined}
-                    opacity={isSelected ? 1 : 0.75}
-                    filter={isSelected || isBottleneck ? (isBottleneck ? "url(#rose-glow)" : isAlpha ? "url(#cyan-glow)" : "url(#emerald-glow)") : undefined}
+                    opacity={isSelected ? 1 : 0.8}
+                    filter={filterUrl}
                     className="transition-all group-hover:opacity-100 group-hover:stroke-width-5"
                   />
 
@@ -451,8 +465,8 @@ export function NetworkTopologyViewer({
           <g className="nodes">
             {visibleNodes.map((node) => {
               const isHub = node.isInterchange;
-              const isAlpha = node.line === "ALP";
-              const strokeColor = isHub ? "#a855f7" : isAlpha ? "#06b6d4" : "#10b981";
+              const theme = getLineTheme(node.line);
+              const strokeColor = isHub ? "#a855f7" : theme.stroke;
               const fillColor = isHub ? "#7e22ce" : "var(--bg-surface)";
 
               return (

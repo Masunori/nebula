@@ -223,7 +223,7 @@ def validate_schedule(
         aid = str(row["activity_id"])
         w = int(row["week"])
         loc = str(row["location_id"])
-        group = str(row["co_share_group"])
+        group = str(row.get("co_share_group") or f"slot_{aid}")
         occupancy_by_loc_week[loc, w][group].append(aid)
 
     capacity_hotspots: list[dict[str, Any]] = []
@@ -310,22 +310,50 @@ def validate_schedule(
     priority_overrun = {"1": 0, "2": 0, "3": 0}
     weighted_scaled = 0
 
-    for row in results_rows:
-        cid = str(row["contract_number"])
-        sim_date = str(row["simulated_completion_date"])
-        overrun = int(row.get("overrun_days", 0))
-        results_by_contract[cid] = {
-            "simulated_completion_date": sim_date,
-            "overrun_days": overrun,
-        }
-        if overrun > 0:
-            contracts_overrunning += 1
-            if scenario == "B":
-                log_violation(
-                    rule="planned_date",
-                    detail=f"Contract {cid} has {overrun} overrun days (Scenario B strictly forbids completion overruns)",
-                    contract=cid,
-                )
+    if results_rows:
+        for row in results_rows:
+            cid = str(row["contract_number"])
+            sim_date = str(row["simulated_completion_date"])
+            overrun = int(row.get("overrun_days", 0))
+            results_by_contract[cid] = {
+                "simulated_completion_date": sim_date,
+                "overrun_days": overrun,
+            }
+            if overrun > 0:
+                contracts_overrunning += 1
+                if scenario == "B":
+                    log_violation(
+                        rule="planned_date",
+                        detail=f"Contract {cid} has {overrun} overrun days (Scenario B strictly forbids completion overruns)",
+                        contract=cid,
+                    )
+    else:
+        # Dynamically compute simulated contract completion from maximum activity finish weeks
+        for contract_id, contract in data.contracts.items():
+            members = data.activities_by_contract.get(contract_id, [])
+            if not members:
+                continue
+            finish_weeks = [activity_finish_week.get(a, 0) for a in members if a in activity_finish_week]
+            if not finish_weeks:
+                continue
+            max_finish = max(finish_weeks)
+            completed_str = data.week_end_dates.get(str(max_finish))
+            if completed_str:
+                completed_dt = date.fromisoformat(completed_str)
+                planned_dt = date.fromisoformat(contract.planned_completion_date)
+                overrun = max(0, (completed_dt - planned_dt).days)
+                results_by_contract[contract_id] = {
+                    "simulated_completion_date": completed_str,
+                    "overrun_days": overrun,
+                }
+                if overrun > 0:
+                    contracts_overrunning += 1
+                    if scenario == "B":
+                        log_violation(
+                            rule="planned_date",
+                            detail=f"Contract {contract_id} has {overrun} overrun days (Scenario B strictly forbids completion overruns)",
+                            contract=contract_id,
+                        )
 
     # Calculate exact completion metrics from activities
     for aid, act in data.activities.items():

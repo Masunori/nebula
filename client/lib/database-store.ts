@@ -45,6 +45,15 @@ export interface DatabaseState {
   datasetName: string;
 }
 
+function invalidateScheduleCache() {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem("nebulax_scenario_solutions_v1");
+      window.dispatchEvent(new CustomEvent("nebula_database_updated"));
+    } catch {}
+  }
+}
+
 export function useDatabaseStore() {
   const [state, setState] = useState<DatabaseState>({
     lines: INITIAL_LINES,
@@ -343,6 +352,7 @@ export function useDatabaseStore() {
       console.warn("API commit error, fallback applied:", e);
     }
     setStagedChanges([]);
+    invalidateScheduleCache();
     return { success: true, committedCount: count };
   }, [stagedChanges]);
 
@@ -360,6 +370,7 @@ export function useDatabaseStore() {
       datasetName: "Default Baseline (init_data/)",
     });
     setStagedChanges([]);
+    invalidateScheduleCache();
   }, []);
 
   // Flush database completely (empties state and server records)
@@ -381,6 +392,7 @@ export function useDatabaseStore() {
       datasetName: "Flushed Database (Empty)",
     });
     setStagedChanges([]);
+    invalidateScheduleCache();
   }, []);
 
   // Load preset dataset (Default, Tier 1, Tier 2, Tier 3)
@@ -388,6 +400,7 @@ export function useDatabaseStore() {
     const newState = getPresetDatasetState(preset);
     setState(newState);
     setStagedChanges([]);
+    invalidateScheduleCache();
     try {
       await fetch("/api/database/load", {
         method: "POST",
@@ -419,14 +432,14 @@ export function useDatabaseStore() {
           // Update local state dynamically
           setState((prev) => {
             const next = { ...prev };
-            if (parsed.table === "activities") next.activities = parsed.records;
-            else if (parsed.table === "contracts") next.contracts = parsed.records;
-            else if (parsed.table === "lines") next.lines = parsed.records;
-            else if (parsed.table === "stations") next.stations = parsed.records;
-            else if (parsed.table === "sectors") next.sectors = parsed.records;
-            else if (parsed.table === "locationSupply") next.locationSupply = parsed.records;
-            else if (parsed.table === "bufferRules") next.bufferRules = parsed.records;
-            else if (parsed.table === "parameters") next.parameters = parsed.records;
+            if (parsed.table === "lines") next.lines = parsed.records as Line[];
+            else if (parsed.table === "stations") next.stations = parsed.records as Station[];
+            else if (parsed.table === "sectors") next.sectors = parsed.records as Sector[];
+            else if (parsed.table === "locationSupply") next.locationSupply = parsed.records as LocationSupply[];
+            else if (parsed.table === "bufferRules") next.bufferRules = parsed.records as BufferRule[];
+            else if (parsed.table === "parameters") next.parameters = parsed.records as SystemParameter[];
+            else if (parsed.table === "contracts") next.contracts = parsed.records as Contract[];
+            else if (parsed.table === "activities") next.activities = parsed.records as Activity[];
             next.datasetName = `Custom Ingestion (${file.name})`;
             return next;
           });
@@ -445,6 +458,7 @@ export function useDatabaseStore() {
         }
       }
 
+      invalidateScheduleCache();
       return { count: totalUpdated, tables: updatedTables, errors };
     },
     []

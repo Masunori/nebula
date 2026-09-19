@@ -239,36 +239,47 @@ export function SchedulePreCalculationCard({
             </div>
           </div>
 
-          {/* Section B: Time Budget Selector */}
+          {/* Section B: Search Dropdown */}
           <div className="precalc-section">
             <div className="precalc-label-row">
-              <label className="precalc-label">
-                <Clock size={13} style={{ display: 'inline', marginRight: 4 }} />
-                CP-SAT Time Budget:
+              <label htmlFor="search-select" className="precalc-label font-bold flex items-center gap-1.5 text-xs text-slate-300">
+                <Clock size={13} className="text-teal-400" />
+                Search
               </label>
-              <span className="font-mono text-xs text-ink-500">
-                Wall Limit: {timeBudgetSeconds}s
+              <span className="badge badge--neutral font-mono text-xs">
+                {timeBudgetSeconds === 10
+                  ? 'Fast · 10s'
+                  : timeBudgetSeconds === 30
+                  ? 'Standard · 30s'
+                  : timeBudgetSeconds === 60
+                  ? 'Deep · 60s'
+                  : 'Full · 120s'}
               </span>
             </div>
 
-            <div className="time-budget-grid" role="radiogroup" aria-label="Solver Time Budget">
-              {TIME_BUDGETS.map((tb) => {
-                const isSelected = timeBudgetSeconds === tb.sec;
-                return (
-                  <button
-                    key={tb.sec}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    className={`time-budget-btn ${isSelected ? 'active' : ''}`}
-                    onClick={() => onTimeBudgetChange(tb.sec)}
-                  >
-                    <div className="time-budget-sec">{tb.label}</div>
-                    <div className="time-budget-sublabel">{tb.sublabel}</div>
-                    <div className="time-budget-desc">{tb.desc}</div>
-                  </button>
-                );
-              })}
+            <div className="relative mt-2">
+              <select
+                id="search-select"
+                className="w-full bg-slate-900/90 text-slate-100 border border-slate-700/80 rounded-lg px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:border-teal-500 transition-colors shadow-inner cursor-pointer"
+                value={timeBudgetSeconds}
+                onChange={(e) => onTimeBudgetChange(Number(e.target.value))}
+              >
+                <option value={10}>Fast (10s)</option>
+                <option value={30}>Standard (30s)</option>
+                <option value={60}>Deep (60s)</option>
+                <option value={120}>Full (120s)</option>
+              </select>
+            </div>
+
+            {/* Dynamic visual feedback */}
+            <div className="mt-2 flex items-center gap-2 text-xs text-slate-400">
+              <span className="inline-block w-2 h-2 rounded-full bg-teal-500 flex-shrink-0" />
+              <span>
+                {timeBudgetSeconds === 10 && 'Fast: Quick greedy feasibility check and baseline schedule.'}
+                {timeBudgetSeconds === 30 && 'Standard: Balanced branch-and-bound optimization with LNS search.'}
+                {timeBudgetSeconds === 60 && 'Deep: Extensive neighborhood search with multi-worker parallel cuts.'}
+                {timeBudgetSeconds === 120 && 'Full: Exhaustive mathematical search targeting globally optimal score.'}
+              </span>
             </div>
           </div>
         </div>

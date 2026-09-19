@@ -14,6 +14,10 @@ import {
   Hash,
   Copy,
   Check,
+  Edit3,
+  Undo2,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 
 export interface ScheduleTelemetryBarProps {
@@ -25,6 +29,10 @@ export interface ScheduleTelemetryBarProps {
   feasibilityStatus?: 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'UNKNOWN';
   hardViolationsCount?: number;
   softPenaltyScore?: number | null;
+  baselineScore?: number | null;
+  currentScore?: number | null;
+  scoreDelta?: number | null;
+  isManuallyEdited?: boolean;
   scoreBreakdown?: {
     overrunDays?: number;
     excessNights?: number;
@@ -33,6 +41,9 @@ export interface ScheduleTelemetryBarProps {
   };
   onRecalculate: () => void;
   isRecalculating?: boolean;
+  onToggleEdit?: () => void;
+  isEditing?: boolean;
+  onRevertBaseline?: () => void;
 }
 
 export function ScheduleTelemetryBar({
@@ -44,9 +55,16 @@ export function ScheduleTelemetryBar({
   feasibilityStatus = 'FEASIBLE',
   hardViolationsCount = 0,
   softPenaltyScore,
+  baselineScore,
+  currentScore,
+  scoreDelta,
+  isManuallyEdited = false,
   scoreBreakdown,
   onRecalculate,
   isRecalculating = false,
+  onToggleEdit,
+  isEditing = false,
+  onRevertBaseline,
 }: ScheduleTelemetryBarProps) {
   const [copiedIso, setCopiedIso] = useState(false);
 
@@ -169,28 +187,109 @@ export function ScheduleTelemetryBar({
           </span>
         </div>
 
-        {/* 6. Soft Penalty Score */}
-        <div
-          className="telemetry-chip telemetry-chip--highlight"
-          title={
-            scoreBreakdown
-              ? `Overrun: ${scoreBreakdown.overrunDays ?? 0}d | Excess: ${
-                  scoreBreakdown.excessNights ?? 0
-                }n | ECLO: ${scoreBreakdown.ecloNights ?? 0}n`
-              : 'Calculated soft objective penalty score'
-          }
-        >
-          <Hash size={13} className="text-teal-600 flex-shrink-0" />
-          <span className="telemetry-chip-label">Penalty Score:</span>
-          <span className="telemetry-chip-val font-mono font-bold">
-            {softPenaltyScore !== null && softPenaltyScore !== undefined
-              ? softPenaltyScore.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })
-              : '0.0'}
-          </span>
-        </div>
+        {/* 6. Soft Penalty Score (Comparative Baseline vs Manual Score) */}
+        {isManuallyEdited && baselineScore !== null && baselineScore !== undefined ? (
+          <>
+            {/* CP-SAT Engine Baseline Score */}
+            <div
+              className="telemetry-chip"
+              title="CP-SAT Optimal / Feasible Baseline Score found by the solver"
+              style={{ backgroundColor: "rgba(15, 23, 42, 0.7)", border: "1px solid #334155" }}
+            >
+              <Hash size={13} className="text-slate-400 flex-shrink-0" />
+              <span className="telemetry-chip-label" style={{ color: "#94a3b8" }}>Baseline (CP-SAT):</span>
+              <span className="telemetry-chip-val font-mono font-medium text-slate-300">
+                {baselineScore.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+              </span>
+            </div>
 
-        {/* 7. Recalculate Action Button */}
-        <div className="telemetry-actions ml-auto">
+            {/* Current Manual Revision Score */}
+            <div
+              className="telemetry-chip telemetry-chip--highlight"
+              title={
+                scoreBreakdown
+                  ? `Overrun: ${scoreBreakdown.overrunDays ?? 0}d | Excess: ${scoreBreakdown.excessNights ?? 0}n | ECLO: ${scoreBreakdown.ecloNights ?? 0}n`
+                  : 'Calculated score of manual modifications'
+              }
+            >
+              <Edit3 size={13} className="text-amber-500 flex-shrink-0" />
+              <span className="telemetry-chip-label">Manual Score:</span>
+              <span className="telemetry-chip-val font-mono font-bold text-amber-300">
+                {(currentScore ?? softPenaltyScore ?? 0).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+              </span>
+            </div>
+
+            {/* Score Delta Badge */}
+            {scoreDelta !== null && scoreDelta !== undefined && (
+              <div
+                className="telemetry-chip"
+                style={{
+                  backgroundColor: scoreDelta > 0 ? "rgba(239, 68, 68, 0.15)" : scoreDelta < 0 ? "rgba(16, 185, 129, 0.15)" : "rgba(100, 116, 139, 0.15)",
+                  border: `1px solid ${scoreDelta > 0 ? "rgba(239, 68, 68, 0.4)" : scoreDelta < 0 ? "rgba(16, 185, 129, 0.4)" : "rgba(100, 116, 139, 0.3)"}`,
+                }}
+                title={`Objective Score Delta: ${(scoreDelta > 0 ? "+" : "") + scoreDelta.toFixed(1)} compared to CP-SAT baseline`}
+              >
+                {scoreDelta > 0 ? (
+                  <TrendingUp size={13} className="text-rose-400 flex-shrink-0" />
+                ) : scoreDelta < 0 ? (
+                  <TrendingDown size={13} className="text-emerald-400 flex-shrink-0" />
+                ) : null}
+                <span
+                  className="font-mono font-bold text-xs"
+                  style={{ color: scoreDelta > 0 ? "#f87171" : scoreDelta < 0 ? "#34d399" : "#94a3b8" }}
+                >
+                  {scoreDelta > 0 ? `+${scoreDelta.toFixed(1)} Penalty` : scoreDelta < 0 ? `${scoreDelta.toFixed(1)} Improved` : "±0.0 (Equal)"}
+                </span>
+              </div>
+            )}
+          </>
+        ) : (
+          <div
+            className="telemetry-chip telemetry-chip--highlight"
+            title={
+              scoreBreakdown
+                ? `Overrun: ${scoreBreakdown.overrunDays ?? 0}d | Excess: ${
+                    scoreBreakdown.excessNights ?? 0
+                  }n | ECLO: ${scoreBreakdown.ecloNights ?? 0}n`
+                : 'Calculated soft objective penalty score'
+            }
+          >
+            <Hash size={13} className="text-teal-600 flex-shrink-0" />
+            <span className="telemetry-chip-label">Penalty Score:</span>
+            <span className="telemetry-chip-val font-mono font-bold">
+              {softPenaltyScore !== null && softPenaltyScore !== undefined
+                ? softPenaltyScore.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })
+                : '0.0'}
+            </span>
+          </div>
+        )}
+
+        {/* 7. Action Controls */}
+        <div className="telemetry-actions ml-auto flex items-center gap-2">
+          {onRevertBaseline && isManuallyEdited && (
+            <button
+              type="button"
+              className="btn btn--sm btn--secondary"
+              onClick={onRevertBaseline}
+              title="Discard manual edits and revert to CP-SAT optimal baseline"
+            >
+              <Undo2 size={13} />
+              <span>Revert to Baseline</span>
+            </button>
+          )}
+
+          {onToggleEdit && (
+            <button
+              type="button"
+              className={`btn btn--sm ${isEditing ? "btn--primary" : "btn--secondary"}`}
+              onClick={onToggleEdit}
+              title={isEditing ? "Exit manual editing mode" : "Enable drag-and-drop manual editing of timetable slots"}
+            >
+              <Edit3 size={13} />
+              <span>{isEditing ? "Done Editing" : "Edit Manually"}</span>
+            </button>
+          )}
+
           <button
             type="button"
             className="btn btn--sm btn--primary telemetry-recalc-btn"
@@ -202,7 +301,7 @@ export function ScheduleTelemetryBar({
               size={13}
               className={`recalc-icon ${isRecalculating ? 'spin' : ''}`}
             />
-            <span>{isRecalculating ? 'Solving...' : 'Recalculate Schedule'}</span>
+            <span>{isRecalculating ? 'Solving...' : 'Recalculate'}</span>
           </button>
         </div>
       </div>

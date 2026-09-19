@@ -1,4 +1,4 @@
-export type LineCode = 'ALP' | 'BET';
+export type LineCode = 'ALP' | 'BET' | 'GAM' | 'DEL' | 'EPS' | string;
 export type Bound = 'EB' | 'WB';
 export type Scenario = 'A' | 'B' | 'C';
 export type RunStatus = 'queued' | 'optimizing' | 'validating' | 'ready' | 'failed';

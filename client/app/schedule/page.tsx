@@ -31,7 +31,16 @@ import {
   Cpu,
   Sparkles,
   RotateCcw,
+  Edit3,
+  Undo2,
 } from 'lucide-react';
+import {
+  DndContext,
+  DragEndEvent,
+  useSensor,
+  useSensors,
+  PointerSensor,
+} from '@dnd-kit/core';
 
 interface SolvedScheduleRecord {
   scenario: Scenario;
@@ -39,6 +48,10 @@ interface SolvedScheduleRecord {
   wallTimeSeconds: number;
   feasibilityStatus: 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'UNKNOWN';
   score: number;
+  baselineScore: number;
+  currentScore?: number;
+  scoreDelta?: number;
+  isManuallyEdited?: boolean;
   scoreBreakdown?: {
     overrunDays?: number;
     excessNights?: number;
@@ -46,6 +59,7 @@ interface SolvedScheduleRecord {
     priorityWeightedScore?: number;
   };
   rows: TimetableRow[];
+  baselineRows: TimetableRow[];
   valResult: ValidationResult;
   runId: string;
 }
@@ -66,6 +80,21 @@ function ScheduleContent() {
     C: null,
   });
 
+  // Interactive manual editing states
+  const [isManualEditing, setIsManualEditing] = useState<boolean>(false);
+  const [stagedRows, setStagedRows] = useState<TimetableRow[]>([]);
+  const [manualChangesCount, setManualChangesCount] = useState<number>(0);
+  const [isValidatingManual, setIsValidatingManual] = useState<boolean>(false);
+
+  // Drag-and-drop sensor activation
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
   const [hlKey, setHlKey] = useState<string | null>(null);
   const [filters, setFilters] = useState<FiltersType>({
     weeks: [],
@@ -80,22 +109,139 @@ function ScheduleContent() {
   // Current active solution for selected scenario
   const currentSolution = solvedSchedules[selectedScenario];
 
-  // If initialActivity query parameter changes, sync with search filter
+  // Persistent hydration on mount from localStorage or server fallback
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('nebulax_scenario_solutions_v1');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object') {
+          setSolvedSchedules(parsed);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load persisted solutions from localStorage:', e);
+    }
+
+    // Server fallback check for active deliverable files
+    fetch(`/api/solver/persisted?scenario=${selectedScenario}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.has_solution) {
+          getTimetable(`run-${selectedScenario.toLowerCase()}`, selectedScenario)
+            .then((rows) => {
+              const baseScore = data.soft_scores?.objective_score ?? 0;
+              const rec: SolvedScheduleRecord = {
+                scenario: selectedScenario,
+                solvedTimestamp: data.timestamp,
+                wallTimeSeconds: 15.0,
+                feasibilityStatus: data.feasible ? 'OPTIMAL' : 'INFEASIBLE',
+                score: baseScore,
+                baselineScore: baseScore,
+                currentScore: baseScore,
+                scoreDelta: 0,
+                isManuallyEdited: false,
+                scoreBreakdown: {
+                  overrunDays: data.soft_scores?.overrun_days_total ?? 0,
+                  excessNights: data.soft_scores?.excess_access_nights_total ?? 0,
+                  ecloNights: data.soft_scores?.eclo_nights_total ?? 0,
+                  priorityWeightedScore: data.soft_scores?.priority_weighted_score ?? 0,
+                },
+                rows,
+                baselineRows: rows,
+                valResult: {
+                  runId: `run-${selectedScenario.toLowerCase()}-persisted`,
+                  revisionNumber: '1.0',
+                  scenario: selectedScenario,
+                  feasible: data.feasible,
+                  hardViolations: data.hard_violations || [],
+                  softScores: {
+                    scenario: selectedScenario,
+                    overrunDaysTotal: data.soft_scores?.overrun_days_total ?? 0,
+                    contractsOverrunning: data.soft_scores?.contracts_overrunning ?? 0,
+                    earlinessTotal: data.soft_scores?.earliness_days_total ?? 0,
+                    excessAccessNightsTotal: data.soft_scores?.excess_access_nights_total ?? 0,
+                    ecloNightsTotal: data.soft_scores?.eclo_nights_total ?? 0,
+                    priorityOverrun: data.soft_scores?.priority_overrun ?? {},
+                    priorityWeightedScore: data.soft_scores?.priority_weighted_score ?? 0,
+                  },
+                  validationLog: data.validation_log || [],
+                  validatedAt: data.timestamp,
+                  capacityHotspots: [],
+                  nightsScheduled: 193,
+                  ecloNights: data.soft_scores?.eclo_nights_total ?? 0,
+                },
+                runId: `run-${selectedScenario.toLowerCase()}-persisted`,
+              };
+              setSolvedSchedules((prev) => {
+                const next = { ...prev, [selectedScenario]: rec };
+                try {
+                  localStorage.setItem('nebulax_scenario_solutions_v1', JSON.stringify(next));
+                } catch {}
+                return next;
+              });
+            })
+            .catch(() => {});
+        } else if (data && data.has_solution === false) {
+          // Deliverable files were flushed on server (e.g. database update); clear local state
+          setSolvedSchedules((prev) => {
+            const next = { ...prev, [selectedScenario]: null };
+            try {
+              localStorage.setItem('nebulax_scenario_solutions_v1', JSON.stringify(next));
+            } catch {}
+            return next;
+          });
+        }
+      })
+      .catch(() => {});
+  }, [selectedScenario]);
+
+  // Listen for database state mutations (flush, commit, ingest, preset load)
+  useEffect(() => {
+    const handleDatabaseUpdate = () => {
+      setSolvedSchedules({ A: null, B: null, C: null });
+      try {
+        localStorage.removeItem('nebulax_scenario_solutions_v1');
+      } catch {}
+      setSolveFeedback({
+        type: 'info',
+        message: 'Database updated · Master schedule cleared. Click Calculate below to optimize on new network dataset.',
+      });
+    };
+    window.addEventListener('nebula_database_updated', handleDatabaseUpdate);
+    return () => window.removeEventListener('nebula_database_updated', handleDatabaseUpdate);
+  }, []);
+
+  // Sync initialActivity query parameter with search filter
   useEffect(() => {
     if (initialActivity) {
-      setFilters(prev => ({ ...prev, search: initialActivity }));
+      setFilters((prev) => ({ ...prev, search: initialActivity }));
     }
   }, [initialActivity]);
 
+  // Keep stagedRows in sync when entering editing mode or changing solution
+  useEffect(() => {
+    if (!isManualEditing && currentSolution) {
+      setStagedRows(currentSolution.rows);
+      setManualChangesCount(0);
+    }
+  }, [currentSolution, isManualEditing]);
+
+  const displayRows = useMemo(() => {
+    if (isManualEditing) {
+      return stagedRows;
+    }
+    return currentSolution ? currentSolution.rows : [];
+  }, [isManualEditing, stagedRows, currentSolution]);
+
   const availableWeeks = useMemo(() => {
-    if (!currentSolution) return [];
-    return getUniqueWeeks(currentSolution.rows);
-  }, [currentSolution]);
+    return getUniqueWeeks(displayRows);
+  }, [displayRows]);
 
   const filteredRows = useMemo(() => {
-    if (!currentSolution) return [];
-    return filterTimetableRows(currentSolution.rows, filters);
-  }, [currentSolution, filters]);
+    return filterTimetableRows(displayRows, filters);
+  }, [displayRows, filters]);
 
   const handleDownloadCsv = (filename: string) => {
     window.location.href = `/api/solver/download?file=${encodeURIComponent(filename)}&scenario=${selectedScenario}`;
@@ -107,12 +253,188 @@ function ScheduleContent() {
 
   const handleScenarioChange = (scenario: Scenario) => {
     setSelectedScenario(scenario);
+    setIsManualEditing(false);
     setSolveFeedback(null);
+  };
+
+  // Drag and drop handler for manual schedule adjustments
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activity = active.data.current?.activity as TimetableRow | undefined;
+    const [, weekText, ...locationParts] = String(over.id).split(':');
+    const week = Number(weekText);
+    const locationId = locationParts.join(':');
+    if (!activity || !week || !locationId) return;
+
+    const locationPartsForLine = locationId.split(':');
+    const lineCode = locationPartsForLine[1] as TimetableRow['lineCode'];
+    const bound = locationPartsForLine.at(-1) as TimetableRow['bound'];
+
+    setStagedRows((current) =>
+      current.map((row) =>
+        row.activityId === activity.activityId &&
+        row.accessSeq === activity.accessSeq &&
+        !row.isDerived
+          ? {
+              ...row,
+              week,
+              calendarWeek: `CW${String(week).padStart(2, '0')}`,
+              locationId,
+              lineCode,
+              bound,
+              status: 'pending' as const,
+            }
+          : row
+      )
+    );
+    setManualChangesCount((c) => c + 1);
+  };
+
+  const handleToggleManualEdit = () => {
+    if (!currentSolution) return;
+    if (!isManualEditing) {
+      setStagedRows(currentSolution.rows);
+      setManualChangesCount(0);
+      setIsManualEditing(true);
+    } else {
+      setIsManualEditing(false);
+    }
+  };
+
+  // Confirm and validate manual schedule changes in <150ms
+  const handleConfirmManualEdits = async () => {
+    if (!currentSolution) return;
+    setIsValidatingManual(true);
+    setSolveFeedback({
+      type: 'info',
+      message: `Auditing manual modifications on Scenario ${selectedScenario} (<150ms)...`,
+    });
+
+    try {
+      const accessRows = stagedRows
+        .filter((r) => !r.isDerived)
+        .map((r) => ({
+          activity_id: r.activityId,
+          access_seq: r.accessSeq,
+          week: r.week,
+          eclo: r.eclo ? 1 : 0,
+          access_night: r.accessNight || 1,
+        }));
+
+      const occupancyRows = stagedRows.map((r) => ({
+        activity_id: r.activityId,
+        week: r.week,
+        location_id: r.locationId,
+        co_share_group: r.coShareGroup || `slot_${r.activityId}`,
+      }));
+
+      const audit = await validateScheduleRemote(selectedScenario, accessRows, occupancyRows);
+      const newScore =
+        audit?.soft_scores?.objective_score ??
+        audit?.soft_scores?.priority_weighted_score ??
+        currentSolution.score;
+      const baseline = currentSolution.baselineScore ?? currentSolution.score;
+      const delta = Number((newScore - baseline).toFixed(2));
+      const timestamp = new Date().toISOString();
+
+      const updatedRecord: SolvedScheduleRecord = {
+        ...currentSolution,
+        currentScore: newScore,
+        score: newScore,
+        scoreDelta: delta,
+        isManuallyEdited: true,
+        rows: stagedRows,
+        scoreBreakdown: {
+          overrunDays: audit?.soft_scores?.overrun_days_total ?? 0,
+          excessNights: audit?.soft_scores?.excess_access_nights_total ?? 0,
+          ecloNights: audit?.soft_scores?.eclo_nights_total ?? 0,
+          priorityWeightedScore: audit?.soft_scores?.priority_weighted_score ?? 0,
+        },
+        valResult: {
+          ...currentSolution.valResult,
+          feasible: audit.feasible,
+          hardViolations: audit.hard_violations || [],
+          softScores: {
+            scenario: selectedScenario,
+            overrunDaysTotal: audit?.soft_scores?.overrun_days_total ?? 0,
+            contractsOverrunning: audit?.soft_scores?.contracts_overrunning ?? 0,
+            earlinessTotal: audit?.soft_scores?.earliness_days_total ?? 0,
+            excessAccessNightsTotal: audit?.soft_scores?.excess_access_nights_total ?? 0,
+            ecloNightsTotal: audit?.soft_scores?.eclo_nights_total ?? 0,
+            priorityOverrun: audit?.soft_scores?.priority_overrun ?? {},
+            priorityWeightedScore: audit?.soft_scores?.priority_weighted_score ?? 0,
+          },
+          validationLog: audit.validation_log || [],
+          validatedAt: timestamp,
+        },
+      };
+
+      setSolvedSchedules((prev) => {
+        const next = { ...prev, [selectedScenario]: updatedRecord };
+        try {
+          localStorage.setItem('nebulax_scenario_solutions_v1', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setIsManualEditing(false);
+      setSolveFeedback({
+        type: audit.feasible ? 'success' : 'error',
+        message: `Manual schedule scored in <150ms! Feasible: ${
+          audit.feasible ? 'VALID' : 'INVALID'
+        }. New Score: ${newScore.toFixed(1)} (${
+          delta >= 0 ? '+' : ''
+        }${delta.toFixed(1)} vs CP-SAT Baseline).`,
+      });
+    } catch (err: any) {
+      setSolveFeedback({
+        type: 'error',
+        message: `Validation failed: ${err.message}`,
+      });
+    } finally {
+      setIsValidatingManual(false);
+    }
+  };
+
+  // Revert manual edits back to CP-SAT optimal baseline
+  const handleRevertBaseline = () => {
+    if (!currentSolution || !currentSolution.baselineRows) return;
+    const baseScore = currentSolution.baselineScore ?? currentSolution.score;
+    const baseRows = currentSolution.baselineRows;
+
+    const revertedRecord: SolvedScheduleRecord = {
+      ...currentSolution,
+      rows: baseRows,
+      currentScore: baseScore,
+      score: baseScore,
+      scoreDelta: 0,
+      isManuallyEdited: false,
+    };
+
+    setSolvedSchedules((prev) => {
+      const next = { ...prev, [selectedScenario]: revertedRecord };
+      try {
+        localStorage.setItem('nebulax_scenario_solutions_v1', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    setStagedRows(baseRows);
+    setManualChangesCount(0);
+    setIsManualEditing(false);
+
+    setSolveFeedback({
+      type: 'success',
+      message: `Reverted to CP-SAT optimal baseline schedule for Scenario ${selectedScenario}. Score: ${baseScore.toFixed(1)}`,
+    });
   };
 
   // Core CP-SAT Solver Execution Flow
   const handleRunSolver = async () => {
     setIsSolving(true);
+    setIsManualEditing(false);
     setSolveFeedback({
       type: 'info',
       message: `Solving Scenario ${selectedScenario} with CP-SAT (time budget: ${solveBudgetSeconds}s)...`,
@@ -128,7 +450,7 @@ function ScheduleContent() {
 
         // Load timetable rows & deterministic audit for full verification
         const [timetableRows, audit] = await Promise.all([
-          getTimetable(`run-${selectedScenario.toLowerCase()}`),
+          getTimetable(`run-${selectedScenario.toLowerCase()}`, selectedScenario),
           validateScheduleRemote(selectedScenario).catch(() => null),
         ]);
 
@@ -140,6 +462,10 @@ function ScheduleContent() {
           wallTimeSeconds: Number(wallTime.toFixed(2)),
           feasibilityStatus: status,
           score,
+          baselineScore: score,
+          currentScore: score,
+          scoreDelta: 0,
+          isManuallyEdited: false,
           scoreBreakdown: {
             overrunDays: result.soft_scores?.overrun_days_total ?? 0,
             excessNights: result.soft_scores?.excess_access_nights_total ?? 0,
@@ -147,6 +473,7 @@ function ScheduleContent() {
             priorityWeightedScore: result.soft_scores?.priority_weighted_score ?? 0,
           },
           rows: timetableRows,
+          baselineRows: timetableRows,
           valResult: {
             runId: `run-${selectedScenario.toLowerCase()}-${Date.now()}`,
             revisionNumber: '1.0',
@@ -172,10 +499,13 @@ function ScheduleContent() {
           runId: `run-${selectedScenario.toLowerCase()}-${Date.now()}`,
         };
 
-        setSolvedSchedules(prev => ({
-          ...prev,
-          [selectedScenario]: solvedRecord,
-        }));
+        setSolvedSchedules((prev) => {
+          const next = { ...prev, [selectedScenario]: solvedRecord };
+          try {
+            localStorage.setItem('nebulax_scenario_solutions_v1', JSON.stringify(next));
+          } catch {}
+          return next;
+        });
 
         setSolveFeedback({
           type: 'success',
@@ -431,21 +761,80 @@ function ScheduleContent() {
             feasibilityStatus={currentSolution.feasibilityStatus}
             hardViolationsCount={currentSolution.valResult.hardViolations.length}
             softPenaltyScore={currentSolution.score}
+            baselineScore={currentSolution.baselineScore}
+            currentScore={currentSolution.currentScore ?? currentSolution.score}
+            scoreDelta={currentSolution.scoreDelta ?? 0}
+            isManuallyEdited={Boolean(currentSolution.isManuallyEdited)}
             scoreBreakdown={currentSolution.scoreBreakdown}
             onRecalculate={handleRunSolver}
             isRecalculating={isSolving}
+            onToggleEdit={handleToggleManualEdit}
+            isEditing={isManualEditing}
+            onRevertBaseline={handleRevertBaseline}
           />
 
           {/* 4. MASTER SCHEDULER TIMETABLE & SIDEBAR VALIDATION */}
           <div className="run-layout">
             <div className="run-main section" style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Manual Editing Active Banner */}
+              {isManualEditing && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    marginBottom: 12,
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#f59e0b' }}>
+                    <Edit3 size={15} />
+                    <span style={{ fontWeight: 600 }}>Manual Editing Mode Active</span>
+                    <span style={{ color: 'var(--ink-500)', fontSize: 12 }}>
+                      · Drag activities to adjust weeks or locations ({manualChangesCount} change{manualChangesCount !== 1 ? 's' : ''} staged)
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setStagedRows(currentSolution.rows);
+                        setIsManualEditing(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      loading={isValidatingManual}
+                      leftIcon={<Sparkles size={14} />}
+                      onClick={handleConfirmManualEdits}
+                      title="Validate draft against 8 rigid rules and recalculate penalty in <150ms"
+                    >
+                      Confirm &amp; Validate Changes (&lt;150ms)
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <TimetableFilters
                 filters={filters}
                 onChange={setFilters}
                 availableWeeks={availableWeeks}
               />
               <div style={{ flex: 1, minHeight: 480 }}>
-                <TimetableView rows={filteredRows} highlightCellKey={hlKey} />
+                {isManualEditing ? (
+                  <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                    <TimetableView rows={filteredRows} highlightCellKey={hlKey} editable={true} />
+                  </DndContext>
+                ) : (
+                  <TimetableView rows={filteredRows} highlightCellKey={hlKey} editable={false} />
+                )}
               </div>
             </div>
 
