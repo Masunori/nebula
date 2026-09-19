@@ -480,7 +480,8 @@ def _build_activity_footprint(
     count, include platforms, and stop at line termini. When required, the
     entire buffered interval is mirrored to the opposite bound. Live work
     reaching H01/H02 also closes their platforms and connecting tunnel on both
-    bounds of other lines; that cross-line closure is not recursively buffered.
+    bounds of other lines, including the configured buffer around that other
+    line's interchange interval. This expansion does not recursively cross back.
     These are the spatial conventions documented in docs/Preprocessing.md.
 
     Args:
@@ -581,7 +582,14 @@ def _build_activity_footprint(
                             candidates <= locations.keys(),
                             "Live interchange requires H01/H02 locations on both lines",
                         )
-                        interchange.update(candidates)
+                        other_lower = min(spans[loc][2] for loc in candidates)
+                        other_upper = max(spans[loc][3] for loc in candidates)
+                        interchange.update(interval(
+                            other,
+                            other_bound,
+                            max(0, other_lower - radius),
+                            min(len(station_order[other]) - 1, other_upper + radius),
+                        ))
     exclusion = buffer | mirror | interchange
     footprint = route | exclusion
     affected_lines = sorted({spans[location_id][0] for location_id in footprint})

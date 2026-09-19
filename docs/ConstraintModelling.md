@@ -55,7 +55,7 @@ If the work is live, define $MIR_a$ as the corresponding locations closed on the
 
 ### Live interchange effect
 
-If a Live activity affects H01-H02, $INT_a$ contains the corresponding other-line H01-H02 tunnel/platform closures.
+If a Live activity affects H01-H02, $INT_a$ contains the corresponding other-line H01-H02 tunnel/platform closures on both bounds, expanded by the configured buffer radius on that line and clipped at its termini.
 
 ### External exclusion footprint
 
