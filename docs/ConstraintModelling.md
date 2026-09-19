@@ -38,14 +38,14 @@ From its start/end locations, preprocess $R_a \subseteq L$, which are all actual
 
 ### 3.1. Buffer
 
-The protective buffer $B_a \subseteq L_{\text{sec}}$ consists of running track tunnel sectors adjacent to the work boundaries to ensure block separation:
-- `2` refers to two adjacent tunnel sectors on both sides
-- `1` refers to one adjacent tunnel sector on both sides
-- Station platforms outside $R_a$ are not absorbed into $B_a$.
+The protective buffer $B_a$ ensures block separation and electrical isolation:
+- For `Live` activities, cutting third-rail traction power de-energises the entire electrical section, encompassing both track sectors and passenger platforms on the same bound ($B_a$) as well as the opposite bound ($MIR_a$) and interchange lines ($INT_a$).
+- For `NonLive(Consist)` activities, third-rail power remains on; the 1-sector buffer enforces physical train block separation, applying strictly to running track tunnel sectors ($B_a \subseteq L_{\text{sec}}$). Passenger platforms outside $R_a$ are not absorbed into $B_a$.
+- For other non-live activities, $B_a = \empty$.
 
 $$
 B_a = \begin{cases}
-  \text{up to 2 adjacent tunnel sectors on both sides} & \text{if } Live \\
+  \text{up to 2 adjacent track sectors and platforms on both sides} & \text{if } Live \\
   \text{up to 1 adjacent tunnel sector on both sides} & \text{if } NonLive(Consist) \\
   \empty & \text{if } NonLive(Others)
 \end{cases}
