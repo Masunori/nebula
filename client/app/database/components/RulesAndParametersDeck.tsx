@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sliders, Calendar, ShieldCheck, ShieldAlert, Save, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Sliders, Calendar, ShieldCheck, ShieldAlert, Save, CheckCircle2 } from "lucide-react";
 import type { BufferRule, SystemParameter } from "@/lib/types";
 
 interface RulesAndParametersDeckProps {
@@ -46,63 +46,82 @@ export function RulesAndParametersDeck({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       {/* 1. Safety Buffer Rules Control Deck */}
-      <div className="section" style={{ padding: 20 }}>
-        <div className="flex items-center gap-2.5 pb-3 border-b" style={{ borderColor: "var(--border-default)" }}>
+      <div
+        className="rounded-2xl border transition-all"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border-default)",
+          boxShadow: "0 4px 20px -2px rgba(15, 25, 35, 0.04)",
+          padding: "28px 32px",
+        }}
+      >
+        <div className="flex items-center gap-3 pb-5 border-b" style={{ borderColor: "var(--border-default)" }}>
           <div
             style={{
-              padding: 6,
+              padding: 10,
               borderRadius: "var(--radius-md)",
-              backgroundColor: "var(--teal-50)",
+              backgroundColor: "var(--teal-050)",
               border: "1px solid var(--border-teal)",
               color: "var(--teal-700)",
             }}
           >
-            <Sliders size={18} />
+            <Sliders size={20} />
           </div>
           <div>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--ink-900)" }}>Spatial Safety Buffer Policies</h3>
-            <p style={{ fontSize: 12, color: "var(--ink-500)" }}>
+            <h3 className="text-base font-bold" style={{ color: "var(--ink-900)" }}>
+              Spatial Safety Buffer Policies
+            </h3>
+            <p className="text-xs mt-0.5" style={{ color: "var(--ink-500)" }}>
               Sector protection radii and opposing bound isolation rules per work classification
             </p>
           </div>
         </div>
 
-        <div className="space-y-4 pt-4">
+        <div className="space-y-5 pt-6">
           {bufferRules.map((rule) => {
-            const isLive = rule.nature_of_works.toLowerCase().includes("live") && !rule.nature_of_works.toLowerCase().includes("non-live");
+            const isLive =
+              rule.nature_of_works.toLowerCase().includes("live") &&
+              !rule.nature_of_works.toLowerCase().includes("non-live");
 
             return (
               <div
                 key={rule.nature_of_works}
+                className="p-5 rounded-xl border space-y-4 transition-all"
                 style={{
-                  padding: 14,
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--border-default)",
-                  backgroundColor: "var(--bg-surface)",
+                  borderColor: "var(--border-default)",
+                  backgroundColor: "var(--bg-page)",
                 }}
-                className="space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <span
-                      className={`w-2 h-2 rounded-full ${
-                        isLive ? "bg-rose-400 animate-pulse" : "bg-cyan-400"
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        isLive ? "bg-rose-500 animate-pulse" : "bg-teal-500"
                       }`}
                     ></span>
-                    <strong className="text-xs text-white">{rule.nature_of_works}</strong>
+                    <strong className="text-sm font-semibold" style={{ color: "var(--ink-900)" }}>
+                      {rule.nature_of_works}
+                    </strong>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-slate-900 border border-slate-800 text-slate-400">
+                  <span
+                    className="text-xs px-2.5 py-1 rounded-md font-mono font-semibold"
+                    style={{
+                      backgroundColor: "var(--teal-050)",
+                      border: "1px solid var(--border-teal)",
+                      color: "var(--teal-700)",
+                    }}
+                  >
                     {rule.buffer_sectors} Sector Buffer Margin
                   </span>
                 </div>
 
                 {/* Buffer sectors slider */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-400">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs" style={{ color: "var(--ink-600)" }}>
                     <span>Upstream & Downstream Buffer:</span>
-                    <span className="font-mono text-cyan-300 font-bold">
+                    <span className="font-mono font-bold" style={{ color: "var(--teal-700)" }}>
                       {rule.buffer_sectors} Sectors ({rule.buffer_sectors * 1000}m)
                     </span>
                   </div>
@@ -119,9 +138,9 @@ export function RulesAndParametersDeck({
                         rule.requires_opposite_bound
                       )
                     }
-                    className="w-full accent-cyan-500 cursor-pointer"
+                    className="w-full accent-teal-600 cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-600 font-mono">
+                  <div className="flex justify-between text-[11px] font-mono" style={{ color: "var(--ink-400)" }}>
                     <span>0 (Consist Only)</span>
                     <span>1 Sector (1km)</span>
                     <span>2 Sectors (2km)</span>
@@ -130,14 +149,14 @@ export function RulesAndParametersDeck({
                 </div>
 
                 {/* Opposite bound checkbox */}
-                <div className="pt-2 border-t border-slate-900 flex items-center justify-between">
-                  <span className="text-xs text-slate-300 flex items-center gap-1.5">
+                <div className="pt-3 border-t flex items-center justify-between" style={{ borderColor: "var(--border-default)" }}>
+                  <span className="text-xs flex items-center gap-2" style={{ color: "var(--ink-700)" }}>
                     {rule.requires_opposite_bound ? (
-                      <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                      <ShieldAlert className="w-4 h-4 text-rose-500" />
                     ) : (
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
                     )}
-                    Enforce Opposite Bound Blockade:
+                    <span>Enforce Opposite Bound Blockade:</span>
                   </span>
                   <button
                     type="button"
@@ -148,11 +167,12 @@ export function RulesAndParametersDeck({
                         !rule.requires_opposite_bound
                       )
                     }
-                    className={`px-3 py-1 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
-                      rule.requires_opposite_bound
-                        ? "bg-rose-950 text-rose-300 border border-rose-700"
-                        : "bg-slate-800 text-slate-400 border border-slate-700 hover:text-white"
-                    }`}
+                    style={{
+                      backgroundColor: rule.requires_opposite_bound ? "var(--status-red-bg)" : "var(--bg-muted)",
+                      color: rule.requires_opposite_bound ? "var(--status-red)" : "var(--ink-700)",
+                      border: `1px solid ${rule.requires_opposite_bound ? "var(--status-red-border)" : "var(--border-default)"}`,
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer"
                   >
                     {rule.requires_opposite_bound ? "ENFORCED (YES)" : "DISABLED (NO)"}
                   </button>
@@ -164,39 +184,47 @@ export function RulesAndParametersDeck({
       </div>
 
       {/* 2. System Calendar & Horizon Settings */}
-      <div className="section" style={{ padding: 20 }}>
-        <div className="flex items-center gap-2.5 pb-3 border-b" style={{ borderColor: "var(--border-default)" }}>
+      <div
+        className="rounded-2xl border transition-all"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border-default)",
+          boxShadow: "0 4px 20px -2px rgba(15, 25, 35, 0.04)",
+          padding: "28px 32px",
+        }}
+      >
+        <div className="flex items-center gap-3 pb-5 border-b" style={{ borderColor: "var(--border-default)" }}>
           <div
             style={{
-              padding: 6,
+              padding: 10,
               borderRadius: "var(--radius-md)",
-              backgroundColor: "var(--teal-50)",
+              backgroundColor: "var(--teal-050)",
               border: "1px solid var(--border-teal)",
               color: "var(--teal-700)",
             }}
           >
-            <Calendar size={18} />
+            <Calendar size={20} />
           </div>
           <div>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--ink-900)" }}>System Calendar & Horizon Parameters</h3>
-            <p style={{ fontSize: 12, color: "var(--ink-500)" }}>
+            <h3 className="text-base font-bold" style={{ color: "var(--ink-900)" }}>
+              System Calendar & Horizon Parameters
+            </h3>
+            <p className="text-xs mt-0.5" style={{ color: "var(--ink-500)" }}>
               Macro planning time horizon parameters controlling schedule bounds and penalties
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSaveParameters} className="space-y-4 pt-4">
+        <form onSubmit={handleSaveParameters} className="space-y-5 pt-6">
           {/* Horizon Weeks Input */}
           <div
+            className="p-5 rounded-xl border space-y-2"
             style={{
-              padding: 14,
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border-default)",
-              backgroundColor: "var(--bg-surface)",
+              borderColor: "var(--border-default)",
+              backgroundColor: "var(--bg-page)",
             }}
-            className="space-y-2"
           >
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-900)" }} className="block">
+            <label className="block text-xs font-semibold" style={{ color: "var(--ink-900)" }}>
               Operational Horizon Window (Weeks):
             </label>
             <input
@@ -205,76 +233,62 @@ export function RulesAndParametersDeck({
               max={52}
               value={weeks}
               onChange={(e) => setWeeks(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg font-mono text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/20"
               style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: "var(--radius-md)",
                 border: "1px solid var(--border-default)",
-                backgroundColor: "var(--bg-page)",
+                backgroundColor: "var(--bg-surface)",
                 color: "var(--ink-900)",
-                fontFamily: "monospace",
-                fontSize: 13,
               }}
             />
-            <p style={{ fontSize: 11, color: "var(--ink-500)" }}>
+            <p className="text-xs" style={{ color: "var(--ink-500)" }}>
               Official competition default is 30 weeks. Solver optimizes possession nights across this range.
             </p>
           </div>
 
           {/* Horizon Start Date */}
           <div
+            className="p-5 rounded-xl border space-y-2"
             style={{
-              padding: 14,
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border-default)",
-              backgroundColor: "var(--bg-surface)",
+              borderColor: "var(--border-default)",
+              backgroundColor: "var(--bg-page)",
             }}
-            className="space-y-2"
           >
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-900)" }} className="block">
+            <label className="block text-xs font-semibold" style={{ color: "var(--ink-900)" }}>
               Calendar Horizon Start Date (Week 1 Monday):
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg font-mono text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/20"
               style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: "var(--radius-md)",
                 border: "1px solid var(--border-default)",
-                backgroundColor: "var(--bg-page)",
+                backgroundColor: "var(--bg-surface)",
                 color: "var(--ink-900)",
-                fontFamily: "monospace",
-                fontSize: 13,
               }}
             />
-            <p style={{ fontSize: 11, color: "var(--ink-500)" }}>
+            <p className="text-xs" style={{ color: "var(--ink-500)" }}>
               Start date for Week 1 Day 1 (Monday night possession).
             </p>
           </div>
 
           {/* Calendar Calculated Summary */}
           <div
+            className="p-5 rounded-xl border font-mono text-xs space-y-3"
             style={{
-              padding: 14,
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border-default)",
+              borderColor: "var(--border-default)",
               backgroundColor: "var(--bg-muted)",
-              fontSize: 12,
-              fontFamily: "monospace",
             }}
-            className="space-y-2"
           >
-            <div className="flex justify-between" style={{ color: "var(--ink-500)" }}>
+            <div className="flex justify-between" style={{ color: "var(--ink-600)" }}>
               <span>Horizon Start:</span>
               <strong style={{ color: "var(--ink-900)" }}>{startDate} (W01 D1)</strong>
             </div>
-            <div className="flex justify-between" style={{ color: "var(--ink-500)" }}>
+            <div className="flex justify-between" style={{ color: "var(--ink-600)" }}>
               <span>Horizon End:</span>
               <strong style={{ color: "var(--ink-900)" }}>{endDate} (W{weeks.padStart(2, "0")} D7)</strong>
             </div>
-            <div className="flex justify-between pt-2 border-t" style={{ borderColor: "var(--border-default)", color: "var(--ink-500)" }}>
+            <div className="flex justify-between pt-3 border-t" style={{ borderColor: "var(--border-default)", color: "var(--ink-600)" }}>
               <span>Total Available Nights:</span>
               <strong style={{ color: "var(--teal-700)" }}>{(parseInt(weeks, 10) || 30) * 7} calendar days</strong>
             </div>
@@ -283,7 +297,7 @@ export function RulesAndParametersDeck({
           <button
             type="submit"
             className="btn btn--primary"
-            style={{ width: "100%", justifyContent: "center", gap: 8 }}
+            style={{ width: "100%", justifyContent: "center", gap: 8, padding: "12px 20px" }}
           >
             {paramSaved ? (
               <>

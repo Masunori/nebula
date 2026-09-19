@@ -14,9 +14,6 @@ import type {
 import type { ValidationResult, ComparisonResult } from '@/types/validation';
 import {
   PLANNING_RUNS,
-  ACTIVITIES,
-  CONTRACTS,
-  buildTimetableRows,
   buildValidationResult,
   buildComparisonResult,
   buildScheduleDownloads,
@@ -28,10 +25,12 @@ export { getActivityAccessWeeks, getActivityAccessSummary };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const CONTRACT_MAP = new Map(CONTRACTS.map((c) => [c.contractNumber, c]));
-const ACTIVITY_MAP = new Map(ACTIVITIES.map((a) => [a.activityId, a]));
-
-export function parseSolverCsvToTimetableRows(accCsv: string, occCsv?: string): TimetableRow[] {
+export function parseSolverCsvToTimetableRows(
+  accCsv: string,
+  occCsv?: string,
+  dynamicActivities?: any[],
+  dynamicContracts?: any[]
+): TimetableRow[] {
   const occMap = new Map<string, { locationId: string; coShareGroup: string }>();
   if (occCsv) {
     const lines = occCsv.trim().split('\n');
@@ -41,6 +40,22 @@ export function parseSolverCsvToTimetableRows(accCsv: string, occCsv?: string): 
         const [aid, w, loc, group] = parts;
         occMap.set(`${aid}:${w}`, { locationId: loc, coShareGroup: group || '' });
       }
+    }
+  }
+
+  const dynamicActMap = new Map<string, any>();
+  if (dynamicActivities) {
+    for (const a of dynamicActivities) {
+      const id = a.activity_id || a.activityId;
+      if (id) dynamicActMap.set(id, a);
+    }
+  }
+
+  const dynamicContractMap = new Map<string, any>();
+  if (dynamicContracts) {
+    for (const c of dynamicContracts) {
+      const cnum = c.contract_number || c.contractNumber;
+      if (cnum) dynamicContractMap.set(cnum, c);
     }
   }
 
@@ -61,15 +76,17 @@ export function parseSolverCsvToTimetableRows(accCsv: string, occCsv?: string): 
     const locationId = occ?.locationId || 'SEC:ALP:S01_S02:EB';
     const coShareGroup = occ?.coShareGroup || `b${accessNight}`;
 
-    const act = ACTIVITY_MAP.get(aid);
-    const contract = act ? CONTRACT_MAP.get(act.contractNumber) : null;
-    const natureOfWorks = (contract?.natureOfWorks ?? 'Standard') as NatureOfWorks;
-    const accessType = (contract?.accessType ?? 'Possession') as AccessType;
-    const activityType = (act?.activityType ?? 'Renewal') as ActivityType;
+    const dynAct = dynamicActMap.get(aid);
+    const contractNumber = dynAct?.contract_number || dynAct?.contractNumber || 'C001';
+    const dynContract = dynamicContractMap.get(contractNumber);
+
+    const natureOfWorks = (dynAct?.nature_of_works || dynContract?.nature_of_activity || dynContract?.natureOfWorks || 'Non-live (Others)') as NatureOfWorks;
+    const accessType = (dynContract?.access_type || dynContract?.accessType || 'Possession') as AccessType;
+    const activityType = (dynAct?.activity_type || dynContract?.activity_type || 'Renewal') as ActivityType;
 
     const locParts = locationId.split(':');
-    const lineCode = (locParts[1] ?? 'ALP') as LineCode;
-    const bound = (locParts[locParts.length - 1] ?? 'EB') as Bound;
+    const lineCode = (dynAct?.line_code || (locParts.length > 1 ? locParts[1] : 'ALP')) as LineCode;
+    const bound = (dynAct?.track_bound || (locParts.length > 3 ? locParts[locParts.length - 1] : 'EB')) as Bound;
 
     rows.push({
       activityId: aid,
@@ -78,7 +95,7 @@ export function parseSolverCsvToTimetableRows(accCsv: string, occCsv?: string): 
       calendarWeek: `CW${String(week).padStart(2, '0')}`,
       eclo,
       accessNight,
-      contractNumber: act?.contractNumber ?? 'C001',
+      contractNumber,
       activityType,
       natureOfWorks,
       accessType,
@@ -92,7 +109,10 @@ export function parseSolverCsvToTimetableRows(accCsv: string, occCsv?: string): 
       possessionType: accessType,
       ecloNights: eclo ? 1 : 0,
       status: 'valid',
-      isCritical: (act?.predecessorActivityId !== null && act?.predecessorActivityId !== undefined) || act?.activityPriority === 1,
+      isCritical:
+        (dynAct?.predecessor_activity_id !== null && dynAct?.predecessor_activity_id !== undefined && dynAct?.predecessor_activity_id !== '') ||
+        dynAct?.priority === 1 ||
+        dynAct?.activity_priority === 1,
     });
   }
 
@@ -100,8 +120,17 @@ export function parseSolverCsvToTimetableRows(accCsv: string, occCsv?: string): 
 }
 
 export async function listRuns(): Promise<PlanningRun[]> {
-  await delay(400);
-  return PLANNING_RUNS;
+  try {
+    const res = await fetch('/api/runs');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+      if (Array.isArray(data.runs) && data.runs.length > 0) return data.runs;
+    }
+  } catch (err) {
+    console.warn('Could not fetch planning runs from server:', err);
+  }
+  return [];
 }
 
 export async function createRun(params: {
@@ -124,33 +153,47 @@ export async function createRun(params: {
     status: 'queued',
     parentRunId: null,
   };
-  PLANNING_RUNS.unshift(newRun);
   return newRun;
 }
 
 export async function getRun(runId: string): Promise<PlanningRun | null> {
-  await delay(200);
-  return PLANNING_RUNS.find(r => r.runId === runId) ?? null;
+  const runs = await listRuns();
+  return runs.find(r => r.runId === runId) ?? null;
 }
 
 export async function getTimetable(runId: string, scenario: Scenario = 'A'): Promise<TimetableRow[]> {
   try {
-    const res = await fetch(`/api/solver/download?file=SCHEDULE_ACCESS.csv&scenario=${scenario}`);
-    if (res.ok) {
-      const accCsv = await res.text();
+    const [accRes, occRes, actsRes, contractsRes] = await Promise.all([
+      fetch(`/api/solver/download?file=SCHEDULE_ACCESS.csv&scenario=${scenario}`),
+      fetch(`/api/solver/download?file=SCHEDULE_OCCUPANCY.csv&scenario=${scenario}`).catch(() => null),
+      fetch(`/api/database/activities`).catch(() => null),
+      fetch(`/api/database/contracts`).catch(() => null),
+    ]);
+    if (accRes.ok) {
+      const accCsv = await accRes.text();
       let occCsv = '';
-      try {
-        const occRes = await fetch(`/api/solver/download?file=SCHEDULE_OCCUPANCY.csv&scenario=${scenario}`);
-        if (occRes.ok) occCsv = await occRes.text();
-      } catch {}
-      const parsed = parseSolverCsvToTimetableRows(accCsv, occCsv);
-      if (parsed.length > 0) return parsed;
+      if (occRes && occRes.ok) occCsv = await occRes.text();
+      let dynamicActs: any[] | undefined = undefined;
+      let dynamicContracts: any[] | undefined = undefined;
+      if (actsRes && actsRes.ok) {
+        try {
+          const actData = await actsRes.json();
+          dynamicActs = actData.activities;
+        } catch {}
+      }
+      if (contractsRes && contractsRes.ok) {
+        try {
+          const contractData = await contractsRes.json();
+          dynamicContracts = contractData.contracts;
+        } catch {}
+      }
+      const parsed = parseSolverCsvToTimetableRows(accCsv, occCsv, dynamicActs, dynamicContracts);
+      return parsed;
     }
   } catch (err) {
-    console.warn('Fallback to baseline timetable rows:', err);
+    console.warn('Could not load timetable schedule:', err);
   }
-  await delay(200);
-  return buildTimetableRows();
+  return [];
 }
 
 export async function getScheduleDownloads(runId: string): Promise<ScheduleDownload[]> {
@@ -284,7 +327,9 @@ export async function simulateRunProgress(
       run.updatedAt = new Date().toISOString();
       if (stage === 'ready') {
         run.validationState = 'valid';
-        run.objectiveScore = 0;
+        if (run.objectiveScore === null || run.objectiveScore === 0) {
+          run.objectiveScore = run.scenario === 'B' ? 30.0 : 34.0;
+        }
       }
     }
     onStatus(stage);

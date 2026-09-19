@@ -17,6 +17,9 @@ import {
   GitBranch,
   CalendarClock,
   Zap,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 import type { Activity, TrackBound, PersonaMode } from "@/lib/types";
@@ -50,6 +53,10 @@ export function ActivityDataGrid({
   const [natureFilter, setNatureFilter] = useState("ALL");
   const [boundFilter, setBoundFilter] = useState("ALL");
   const [quickFilter, setQuickFilter] = useState<"ALL" | "P1" | "LIVE" | "INTERCHANGE" | "PRED">("ALL");
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
   // Sync quickFilter with personaMode changes
   useEffect(() => {
@@ -147,6 +154,17 @@ export function ActivityDataGrid({
     filterSector,
   ]);
 
+  // Reset to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, lineFilter, priorityFilter, natureFilter, boundFilter, quickFilter, filterSector]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredActivities.length / pageSize));
+  const paginatedActivities = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredActivities.slice(start, start + pageSize);
+  }, [filteredActivities, currentPage, pageSize]);
+
   const startEditing = (act: Activity) => {
     setEditingId(act.activity_id);
     setEditForm({
@@ -172,231 +190,355 @@ export function ActivityDataGrid({
     setEditingId(null);
   };
 
+  const handleResetFilters = () => {
+    setLineFilter("ALL");
+    setPriorityFilter("ALL");
+    setNatureFilter("ALL");
+    setBoundFilter("ALL");
+    setQuickFilter("ALL");
+    setSearchTerm("");
+  };
+
+  const hasActiveFilters =
+    lineFilter !== "ALL" ||
+    priorityFilter !== "ALL" ||
+    natureFilter !== "ALL" ||
+    boundFilter !== "ALL" ||
+    quickFilter !== "ALL" ||
+    searchTerm !== "";
+
   return (
-    <div className="space-y-4">
-      {/* Top Filter and Search Bar */}
-      <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
+    <div className="space-y-6">
+      {/* Elevated Filter & Control Console */}
+      <div
+        className="rounded-2xl border transition-all"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border-default)",
+          boxShadow: "0 4px 20px -2px rgba(15, 25, 35, 0.04)",
+          padding: "28px 32px",
+        }}
+      >
         {/* Sector Isolation Banner if active */}
         {filterSector && (
-          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-cyan-950/60 border border-cyan-800 text-xs text-cyan-200">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <div
+            className="flex items-center justify-between px-5 py-3 rounded-xl mb-6 text-xs"
+            style={{
+              backgroundColor: "var(--teal-050)",
+              border: "1px solid var(--border-teal)",
+              color: "var(--teal-900)",
+            }}
+          >
+            <span className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full animate-ping" style={{ backgroundColor: "var(--teal-600)" }}></span>
               <span>
-                Isolated Track Segment: <strong className="font-mono text-white">{filterSector}</strong>
+                Isolated Track Segment: <strong className="font-mono text-sm">{filterSector}</strong>
               </span>
             </span>
             {onClearSectorFilter && (
               <button
                 onClick={onClearSectorFilter}
-                className="text-cyan-400 hover:text-white underline cursor-pointer"
+                className="font-semibold hover:underline cursor-pointer px-2 py-1 rounded"
+                style={{ color: "var(--teal-700)" }}
               >
-                Clear Track Filter
+                Clear Track Segment Filter
               </button>
             )}
           </div>
         )}
 
-        {/* Quick Filter Chips */}
-        <div className="flex flex-wrap items-center gap-2 pb-1 border-b border-slate-800/80 text-xs">
-          <span className="text-slate-400 font-medium">Quick Views:</span>
-          <button
-            onClick={() => {
-              setQuickFilter("ALL");
-              setPriorityFilter("ALL");
-            }}
-            className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-              quickFilter === "ALL" && priorityFilter === "ALL"
-                ? "bg-slate-700 text-white font-semibold"
-                : "bg-slate-800/60 text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            All Workloads ({activities.length})
-          </button>
-          <button
-            onClick={() => {
-              setQuickFilter("P1");
-              setPriorityFilter("1");
-            }}
-            className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
-              quickFilter === "P1" || priorityFilter === "1"
-                ? DESIGN_TOKENS.role.maintainerP1.badge + " font-bold"
-                : "bg-slate-800/60 text-rose-400/80 hover:text-rose-300"
-            }`}
-          >
-            <Wrench className="w-3 h-3" />
-            <span>Maintainer P1 Urgent ({activities.filter((a) => a.priority === 1).length})</span>
-          </button>
-          <button
-            onClick={() => {
-              setQuickFilter("LIVE");
-              setNatureFilter("Live");
-            }}
-            className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
-              quickFilter === "LIVE"
-                ? DESIGN_TOKENS.role.liveTrack.badge + " font-bold"
-                : "bg-slate-800/60 text-amber-400/80 hover:text-amber-300"
-            }`}
-          >
-            <Zap className="w-3 h-3" />
-            <span>750V Live Rail ({activities.filter((a) => a.nature_of_works === "Live").length})</span>
-          </button>
-          <button
-            onClick={() => setQuickFilter("INTERCHANGE")}
-            className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
-              quickFilter === "INTERCHANGE"
-                ? DESIGN_TOKENS.role.interchangeHub.badge + " font-bold"
-                : "bg-slate-800/60 text-purple-400/80 hover:text-purple-300"
-            }`}
-          >
-            <span>🔀 Interchange Crossover (H01-H02)</span>
-          </button>
-          <button
-            onClick={() => setQuickFilter("PRED")}
-            className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
-              quickFilter === "PRED"
-                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold"
-                : "bg-slate-800/60 text-cyan-400/80 hover:text-cyan-300"
-            }`}
-          >
-            <GitBranch className="w-3 h-3" />
-            <span>Has Predecessors</span>
-          </button>
-        </div>
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
-          {/* Search Box */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by Activity ID, Contract, Station (e.g. A004, C001, S04)..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-slate-950 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-            />
+        {/* Console Header: Title, Search & Actions */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b" style={{ borderColor: "var(--border-default)" }}>
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-bold" style={{ color: "var(--ink-900)" }}>
+                Possession Activity Registry
+              </h2>
+              <span
+                className="font-mono text-xs font-semibold px-3 py-1 rounded-full"
+                style={{ backgroundColor: "var(--bg-muted)", color: "var(--ink-700)" }}
+              >
+                {filteredActivities.length} {filteredActivities.length === 1 ? "workload" : "workloads"}
+              </span>
+            </div>
+            <p className="text-xs" style={{ color: "var(--ink-500)" }}>
+              Manage maintenance workfronts, contractor possessions, priority tiers, and precedence DAG links
+            </p>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-mono">
-              Showing {filteredActivities.length} of {activities.length} entries
-            </span>
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Search Box */}
+            <div className="relative min-w-[300px]">
+              <Search className="w-4 h-4 absolute left-3.5 top-3" style={{ color: "var(--ink-400)" }} />
+              <input
+                type="text"
+                placeholder="Search activity ID, contract, station..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                style={{
+                  backgroundColor: "var(--bg-page)",
+                  border: "1px solid var(--border-default)",
+                  color: "var(--ink-900)",
+                }}
+              />
+            </div>
+
+            {/* + New Workload Action */}
             <button
               onClick={onOpenCreateDrawer}
-              className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs flex items-center gap-1.5 shadow-sm shadow-cyan-900/50 cursor-pointer"
+              className="btn btn--primary"
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px" }}
             >
-              <PlusCircle className="w-3.5 h-3.5" />
+              <PlusCircle size={15} />
               <span>+ New Workload</span>
             </button>
           </div>
         </div>
 
-        {/* Multi-Criteria Filters Row */}
-        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-400">
-            <Filter className="w-3.5 h-3.5" />
-            <span>Faceted Filters:</span>
+        {/* Quick Filter Perspective Buttons */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-5 pb-5">
+          <span className="text-xs font-semibold mr-1 uppercase tracking-wider" style={{ color: "var(--ink-500)" }}>
+            Quick Views:
+          </span>
+          <button
+            onClick={() => {
+              setQuickFilter("ALL");
+              setPriorityFilter("ALL");
+            }}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
+            style={{
+              backgroundColor: quickFilter === "ALL" && priorityFilter === "ALL" ? "var(--teal-600)" : "var(--bg-muted)",
+              color: quickFilter === "ALL" && priorityFilter === "ALL" ? "#ffffff" : "var(--ink-700)",
+              border: `1px solid ${quickFilter === "ALL" && priorityFilter === "ALL" ? "var(--teal-700)" : "var(--border-default)"}`,
+            }}
+          >
+            All Workloads ({activities.length})
+          </button>
+
+          <button
+            onClick={() => {
+              setQuickFilter("P1");
+              setPriorityFilter("1");
+            }}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+            style={{
+              backgroundColor: quickFilter === "P1" || priorityFilter === "1" ? "var(--status-red)" : "var(--status-red-bg)",
+              color: quickFilter === "P1" || priorityFilter === "1" ? "#ffffff" : "var(--status-red)",
+              border: `1px solid ${quickFilter === "P1" || priorityFilter === "1" ? "var(--status-red)" : "var(--status-red-border)"}`,
+            }}
+          >
+            <Wrench className="w-3.5 h-3.5" />
+            <span>Priority 1 Maintainer ({activities.filter((a) => a.priority === 1).length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setQuickFilter("LIVE");
+              setNatureFilter("Live");
+            }}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+            style={{
+              backgroundColor: quickFilter === "LIVE" ? "var(--orange-500)" : "var(--status-amber-bg)",
+              color: quickFilter === "LIVE" ? "#ffffff" : "var(--orange-600)",
+              border: `1px solid ${quickFilter === "LIVE" ? "var(--orange-600)" : "var(--status-amber-border)"}`,
+            }}
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>750V Live Rail ({activities.filter((a) => a.nature_of_works === "Live").length})</span>
+          </button>
+
+          <button
+            onClick={() => setQuickFilter("INTERCHANGE")}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+            style={{
+              backgroundColor: quickFilter === "INTERCHANGE" ? "#7c3aed" : "#f5f3ff",
+              color: quickFilter === "INTERCHANGE" ? "#ffffff" : "#6d28d9",
+              border: `1px solid ${quickFilter === "INTERCHANGE" ? "#6d28d9" : "#ddd6fe"}`,
+            }}
+          >
+            <span>Interchange Hubs (H01/H02)</span>
+          </button>
+
+          <button
+            onClick={() => setQuickFilter("PRED")}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+            style={{
+              backgroundColor: quickFilter === "PRED" ? "var(--teal-700)" : "var(--teal-050)",
+              color: quickFilter === "PRED" ? "#ffffff" : "var(--teal-800)",
+              border: `1px solid ${quickFilter === "PRED" ? "var(--teal-800)" : "var(--border-teal)"}`,
+            }}
+          >
+            <GitBranch className="w-3.5 h-3.5" />
+            <span>Has Predecessor</span>
+          </button>
+        </div>
+
+        {/* Faceted Dropdown Filters Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 pt-5 border-t text-xs" style={{ borderColor: "var(--border-default)" }}>
+          {/* Line Filter */}
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--ink-500)" }}>
+              Railway Line
+            </label>
+            <select
+              value={lineFilter}
+              onChange={(e) => setLineFilter(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg font-mono cursor-pointer transition-all"
+              style={{
+                backgroundColor: "var(--bg-page)",
+                border: "1px solid var(--border-default)",
+                color: "var(--ink-800)",
+              }}
+            >
+              <option value="ALL">All Lines</option>
+              {lines.map((l) => (
+                <option key={l} value={l}>
+                  Line {l}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Line Filter */}
-          <select
-            value={lineFilter}
-            onChange={(e) => setLineFilter(e.target.value)}
-            className="px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-mono cursor-pointer"
-          >
-            <option value="ALL">All Lines</option>
-            {lines.map((l) => (
-              <option key={l} value={l}>
-                Line {l}
-              </option>
-            ))}
-          </select>
-
           {/* Priority Filter */}
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-mono cursor-pointer"
-          >
-            <option value="ALL">All Priorities</option>
-            <option value="1">Priority 1 (Critical Maintenance)</option>
-            <option value="2">Priority 2 (High)</option>
-            <option value="3">Priority 3 (Routine)</option>
-          </select>
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--ink-500)" }}>
+              Priority Tier
+            </label>
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg font-mono cursor-pointer transition-all"
+              style={{
+                backgroundColor: "var(--bg-page)",
+                border: "1px solid var(--border-default)",
+                color: "var(--ink-800)",
+              }}
+            >
+              <option value="ALL">All Priorities</option>
+              <option value="1">Priority 1 (Critical)</option>
+              <option value="2">Priority 2 (High)</option>
+              <option value="3">Priority 3 (Routine)</option>
+            </select>
+          </div>
 
           {/* Nature Filter */}
-          <select
-            value={natureFilter}
-            onChange={(e) => setNatureFilter(e.target.value)}
-            className="px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-mono cursor-pointer"
-          >
-            <option value="ALL">All Work Natures</option>
-            <option value="Live">Live (Requires 2-Sector Buffer & Opp Bound)</option>
-            <option value="Non-live (Consist)">Non-live (Consist)</option>
-            <option value="Non-live (Others)">Non-live (Others)</option>
-          </select>
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--ink-500)" }}>
+              Work Nature
+            </label>
+            <select
+              value={natureFilter}
+              onChange={(e) => setNatureFilter(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg font-mono cursor-pointer transition-all"
+              style={{
+                backgroundColor: "var(--bg-page)",
+                border: "1px solid var(--border-default)",
+                color: "var(--ink-800)",
+              }}
+            >
+              <option value="ALL">All Work Natures</option>
+              <option value="Live">Live (2-Sector Live Buffer)</option>
+              <option value="Non-live (Consist)">Non-live (Consist)</option>
+              <option value="Non-live (Others)">Non-live (Others)</option>
+            </select>
+          </div>
 
           {/* Bound Filter */}
-          <select
-            value={boundFilter}
-            onChange={(e) => setBoundFilter(e.target.value)}
-            className="px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-mono cursor-pointer"
-          >
-            <option value="ALL">Both Bounds (EB & WB)</option>
-            <option value="EB">Eastbound (EB)</option>
-            <option value="WB">Westbound (WB)</option>
-          </select>
-
-          {(lineFilter !== "ALL" ||
-            priorityFilter !== "ALL" ||
-            natureFilter !== "ALL" ||
-            boundFilter !== "ALL" ||
-            quickFilter !== "ALL" ||
-            searchTerm !== "") && (
-            <button
-              onClick={() => {
-                setLineFilter("ALL");
-                setPriorityFilter("ALL");
-                setNatureFilter("ALL");
-                setBoundFilter("ALL");
-                setQuickFilter("ALL");
-                setSearchTerm("");
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--ink-500)" }}>
+              Direction Bound
+            </label>
+            <select
+              value={boundFilter}
+              onChange={(e) => setBoundFilter(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg font-mono cursor-pointer transition-all"
+              style={{
+                backgroundColor: "var(--bg-page)",
+                border: "1px solid var(--border-default)",
+                color: "var(--ink-800)",
               }}
-              className="text-[11px] text-cyan-400 hover:underline cursor-pointer"
             >
-              Reset Filters
-            </button>
-          )}
+              <option value="ALL">Both Directions (EB & WB)</option>
+              <option value="EB">Eastbound (EB)</option>
+              <option value="WB">Westbound (WB)</option>
+            </select>
+          </div>
+
+          {/* Reset Filters */}
+          <div className="flex items-end">
+            {hasActiveFilters ? (
+              <button
+                onClick={handleResetFilters}
+                className="w-full px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                style={{ color: "var(--teal-700)", backgroundColor: "var(--teal-050)", border: "1px solid var(--border-teal)" }}
+              >
+                <RotateCcw size={13} />
+                <span>Reset Filters</span>
+              </button>
+            ) : (
+              <div className="w-full px-3 py-2 text-[11px] text-center" style={{ color: "var(--ink-400)" }}>
+                No active filters
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Activities Data Table */}
-      <div className="bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden shadow-sm">
+      {/* Spacious Activities Data Table */}
+      <div
+        className="rounded-2xl border overflow-hidden transition-all"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border-default)",
+          boxShadow: "0 4px 20px -2px rgba(15, 25, 35, 0.04)",
+        }}
+      >
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] tracking-wider border-b border-slate-800">
-              <tr>
-                <th className="py-3 px-3">Activity ID</th>
-                <th className="py-3 px-3">Contract</th>
-                <th className="py-3 px-3">Line & Bound</th>
-                <th className="py-3 px-3">Track Reach</th>
-                <th className="py-3 px-3 text-center">Volume (Nights)</th>
-                <th className="py-3 px-3 text-center">Priority</th>
-                <th className="py-3 px-3">Nature of Work</th>
-                <th className="py-3 px-3">Predecessor</th>
-                <th className="py-3 px-3">Schedule</th>
-                <th className="py-3 px-3 text-right">Actions</th>
+          <table className="w-full text-left text-xs" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+            <thead>
+              <tr style={{ backgroundColor: "var(--bg-muted)", borderBottom: "1px solid var(--border-default)" }}>
+                <th className="py-4 px-5 font-bold text-[11px] uppercase tracking-wider" style={{ color: "var(--ink-700)" }}>
+                  Activity ID
+                </th>
+                <th className="py-4 px-5 font-bold text-[11px] uppercase tracking-wider" style={{ color: "var(--ink-700)" }}>
+                  Contract
+                </th>
+                <th className="py-4 px-5 font-bold text-[11px] uppercase tracking-wider" style={{ color: "var(--ink-700)" }}>
+                  Line & Bound
+                </th>
+                <th className="py-4 px-5 font-bold text-[11px] uppercase tracking-wider" style={{ color: "var(--ink-700)" }}>
+                  Track Reach
+                </th>
+                <th className="py-4 px-5 font-bold text-[11px] uppercase tracking-wider text-center" style={{ color: "var(--ink-700)" }}>
+                  Volume (Nights)
+                </th>
+                <th className="py-4 px-5 font-bold text-[11px] uppercase tracking-wider text-center" style={{ color: "var(--ink-700)" }}>
+                  Priority
+                </th>
+                <th className="py-4 px-5 font-bold text-[11px] uppercase tracking-wider" style={{ color: "var(--ink-700)" }}>
+                  Nature of Work
+                </th>
+                <th className="py-4 px-5 font-bold text-[11px] uppercase tracking-wider" style={{ color: "var(--ink-700)" }}>
+                  Predecessor
+                </th>
+                <th className="py-4 px-5 font-bold text-[11px] uppercase tracking-wider" style={{ color: "var(--ink-700)" }}>
+                  Schedule
+                </th>
+                <th className="py-4 px-5 font-bold text-[11px] uppercase tracking-wider text-right" style={{ color: "var(--ink-700)" }}>
+                  Actions
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80 font-mono">
+            <tbody>
               {filteredActivities.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-slate-500">
+                  <td colSpan={10} className="py-16 text-center text-sm" style={{ color: "var(--ink-500)" }}>
                     No activities match the current filter criteria.
                   </td>
                 </tr>
               ) : (
-                filteredActivities.map((act) => {
+                paginatedActivities.map((act) => {
                   const isSelected = act.activity_id === selectedActivityId;
                   const isEditing = act.activity_id === editingId;
                   const crossesInterchange =
@@ -409,60 +551,80 @@ export function ActivityDataGrid({
                     <tr
                       key={act.activity_id}
                       onClick={() => onSelectActivity(act.activity_id)}
-                      className={`transition-colors cursor-pointer ${
-                        isSelected
-                          ? "bg-cyan-950/40 text-cyan-100 border-l-4 border-l-cyan-400"
-                          : "hover:bg-slate-800/60 text-slate-200"
-                      }`}
+                      className="transition-colors cursor-pointer group hover:bg-slate-50/80"
+                      style={{
+                        backgroundColor: isSelected ? "var(--teal-050)" : "transparent",
+                        borderLeft: isSelected ? "4px solid var(--teal-600)" : "4px solid transparent",
+                        borderBottom: "1px solid var(--border-default)",
+                      }}
                     >
                       {/* Activity ID */}
-                      <td className="py-2.5 px-3 font-bold text-white flex items-center gap-1.5">
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            act.priority === 1
-                              ? "bg-rose-500"
-                              : act.line_code === "ALP"
-                              ? "bg-cyan-400"
-                              : "bg-emerald-400"
-                          }`}
-                        ></span>
-                        <span>{act.activity_id}</span>
+                      <td className="py-4 px-5 font-bold font-mono" style={{ color: "var(--ink-900)" }}>
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{
+                              backgroundColor:
+                                act.priority === 1
+                                  ? "var(--status-red)"
+                                  : act.line_code === "ALP"
+                                  ? "var(--teal-600)"
+                                  : "#10b981",
+                            }}
+                          ></span>
+                          <span className="text-sm font-semibold">{act.activity_id}</span>
+                        </div>
                       </td>
 
                       {/* Contract */}
-                      <td className="py-2.5 px-3">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[11px]">
+                      <td className="py-4 px-5">
+                        <span
+                          className="px-2.5 py-1 rounded font-mono text-xs font-semibold"
+                          style={{
+                            backgroundColor: "var(--bg-muted)",
+                            border: "1px solid var(--border-default)",
+                            color: "var(--ink-800)",
+                          }}
+                        >
                           {act.contract_number}
                         </span>
                       </td>
 
                       {/* Line & Bound */}
-                      <td className="py-2.5 px-3">
+                      <td className="py-4 px-5">
                         <span
-                          className={`font-semibold ${
-                            act.line_code === "ALP" ? "text-cyan-400" : "text-emerald-400"
-                          }`}
+                          className="font-bold font-mono text-xs"
+                          style={{ color: act.line_code === "ALP" ? "var(--teal-700)" : "#059669" }}
                         >
                           {act.line_code}
                         </span>{" "}
                         &middot;{" "}
-                        <span className="text-amber-400 font-bold">{act.track_bound}</span>
+                        <span className="font-mono font-bold text-xs" style={{ color: "var(--orange-600)" }}>
+                          {act.track_bound}
+                        </span>
                       </td>
 
                       {/* Reach */}
-                      <td className="py-2.5 px-3 text-slate-300">
-                        <span className="font-semibold text-white">
+                      <td className="py-4 px-5" style={{ color: "var(--ink-800)" }}>
+                        <span className="font-semibold font-mono text-xs">
                           {act.station_from} → {act.station_to}
                         </span>
                         {crossesInterchange && (
-                          <span className="ml-2 px-1.5 py-0.2 rounded text-[10px] bg-purple-950 border border-purple-800 text-purple-300 font-bold">
-                            H01★H02
+                          <span
+                            className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold"
+                            style={{
+                              backgroundColor: "#f5f3ff",
+                              border: "1px solid #ddd6fe",
+                              color: "#6d28d9",
+                            }}
+                          >
+                            Hub
                           </span>
                         )}
                       </td>
 
                       {/* Total Accesses (Editable) */}
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-4 px-5 text-center">
                         {isEditing ? (
                           <input
                             type="number"
@@ -472,22 +634,34 @@ export function ActivityDataGrid({
                             onChange={(e) =>
                               setEditForm({ ...editForm, total_accesses: Number(e.target.value) })
                             }
-                            className="w-16 px-1.5 py-0.5 bg-slate-950 border border-cyan-500 rounded text-center text-cyan-300 text-xs focus:outline-none"
+                            className="w-16 px-2 py-1.5 rounded text-center font-mono font-bold text-xs"
+                            style={{
+                              backgroundColor: "var(--bg-page)",
+                              border: "2px solid var(--teal-600)",
+                              color: "var(--teal-700)",
+                            }}
                           />
                         ) : (
-                          <span className="font-bold text-cyan-400">{act.total_accesses}</span>
+                          <span className="font-mono font-bold text-sm" style={{ color: "var(--teal-700)" }}>
+                            {act.total_accesses}
+                          </span>
                         )}
                       </td>
 
                       {/* Priority (Editable) */}
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-4 px-5 text-center">
                         {isEditing ? (
                           <select
                             value={editForm.priority}
                             onChange={(e) =>
                               setEditForm({ ...editForm, priority: Number(e.target.value) })
                             }
-                            className="px-1 py-0.5 bg-slate-950 border border-cyan-500 rounded text-xs text-white"
+                            className="px-2 py-1.5 rounded font-mono text-xs"
+                            style={{
+                              backgroundColor: "var(--bg-page)",
+                              border: "2px solid var(--teal-600)",
+                              color: "var(--ink-900)",
+                            }}
                           >
                             <option value={1}>P1</option>
                             <option value={2}>P2</option>
@@ -495,13 +669,28 @@ export function ActivityDataGrid({
                           </select>
                         ) : (
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                              act.priority === 1
-                                ? DESIGN_TOKENS.role.maintainerP1.badge
-                                : act.priority === 2
-                                ? DESIGN_TOKENS.role.commercialP2.badge
-                                : DESIGN_TOKENS.role.routineP3.badge
-                            }`}
+                            className="px-3 py-1 rounded-full text-xs font-bold font-mono"
+                            style={{
+                              backgroundColor:
+                                act.priority === 1
+                                  ? "var(--status-red-bg)"
+                                  : act.priority === 2
+                                  ? "var(--teal-050)"
+                                  : "var(--status-green-bg)",
+                              border: `1px solid ${
+                                act.priority === 1
+                                  ? "var(--status-red-border)"
+                                  : act.priority === 2
+                                  ? "var(--border-teal)"
+                                  : "var(--status-green-border)"
+                              }`,
+                              color:
+                                act.priority === 1
+                                  ? "var(--status-red)"
+                                  : act.priority === 2
+                                  ? "var(--teal-700)"
+                                  : "var(--status-green)",
+                            }}
                           >
                             P{act.priority}
                           </span>
@@ -509,21 +698,21 @@ export function ActivityDataGrid({
                       </td>
 
                       {/* Nature */}
-                      <td className="py-2.5 px-3">
+                      <td className="py-4 px-5">
                         <span
-                          className={`text-[11px] font-medium ${
-                            act.nature_of_works === "Live"
-                              ? "text-amber-400 font-bold flex items-center gap-1"
-                              : "text-slate-300"
-                          }`}
+                          className="text-xs font-medium inline-flex items-center gap-1.5"
+                          style={{
+                            color: act.nature_of_works === "Live" ? "var(--orange-600)" : "var(--ink-700)",
+                            fontWeight: act.nature_of_works === "Live" ? 600 : 400,
+                          }}
                         >
-                          {act.nature_of_works === "Live" && <Zap className="w-3 h-3 text-amber-400" />}
+                          {act.nature_of_works === "Live" && <Zap className="w-3.5 h-3.5 text-amber-500" />}
                           <span>{act.nature_of_works}</span>
                         </span>
                       </td>
 
                       {/* Predecessor */}
-                      <td className="py-2.5 px-3">
+                      <td className="py-4 px-5">
                         {isEditing ? (
                           <input
                             type="text"
@@ -535,42 +724,59 @@ export function ActivityDataGrid({
                                 predecessor_activity_id: e.target.value,
                               })
                             }
-                            className="w-20 px-1.5 py-0.5 bg-slate-950 border border-cyan-500 rounded text-xs text-cyan-300 font-mono uppercase focus:outline-none"
+                            className="w-20 px-2 py-1.5 rounded text-xs font-mono uppercase"
+                            style={{
+                              backgroundColor: "var(--bg-page)",
+                              border: "2px solid var(--teal-600)",
+                              color: "var(--ink-900)",
+                            }}
                           />
                         ) : act.predecessor_activity_id ? (
-                          <span className="px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono text-[11px] flex items-center gap-1 w-fit">
-                            <span>FS+0:</span>
-                            <strong>{act.predecessor_activity_id}</strong>
+                          <span
+                            className="px-2.5 py-1 rounded font-mono text-xs font-semibold flex items-center gap-1.5 w-fit"
+                            style={{
+                              backgroundColor: "var(--teal-050)",
+                              border: "1px solid var(--border-teal)",
+                              color: "var(--teal-800)",
+                            }}
+                          >
+                            <span style={{ color: "var(--teal-600)" }}>FS+0:</span>
+                            <span>{act.predecessor_activity_id}</span>
                           </span>
                         ) : (
-                          <span className="text-slate-600 text-[11px]">- None -</span>
+                          <span className="text-xs" style={{ color: "var(--ink-400)" }}>
+                            —
+                          </span>
                         )}
                       </td>
 
                       {/* Scheduled Access */}
-                      <td className="py-2.5 px-3">
+                      <td className="py-4 px-5">
                         {(() => {
                           const sched = getActivityAccessSummary(act.activity_id);
                           return sched ? (
-                            <span className="badge badge--valid font-mono text-[11px]" title={`Scheduled shifts for ${act.activity_id}`}>
+                            <span className="badge badge--valid font-mono text-xs" title={`Scheduled shifts for ${act.activity_id}`}>
                               {sched}
                             </span>
                           ) : (
-                            <span className="text-slate-600 text-[11px] font-mono">—</span>
+                            <span className="text-xs font-mono" style={{ color: "var(--ink-400)" }}>
+                              —
+                            </span>
                           );
                         })()}
                       </td>
 
                       {/* Actions */}
-                      <td className="py-2.5 px-3 text-right">
+                      <td className="py-4 px-5 text-right">
                         {isEditing ? (
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 saveEditing(act.activity_id);
                               }}
-                              className="p-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer"
+                              className="p-1.5 rounded text-white cursor-pointer"
+                              style={{ backgroundColor: "var(--status-green)" }}
                               title="Save changes to draft"
                             >
                               <Check className="w-3.5 h-3.5" />
@@ -580,21 +786,27 @@ export function ActivityDataGrid({
                                 e.stopPropagation();
                                 cancelEditing();
                               }}
-                              className="p-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 cursor-pointer"
+                              className="p-1.5 rounded cursor-pointer"
+                              style={{ backgroundColor: "var(--bg-muted)", color: "var(--ink-700)" }}
                               title="Cancel"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex items-center justify-end gap-2">
                             <Link
                               href={`/schedule?activity=${act.activity_id}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 border border-slate-700 flex items-center gap-1 cursor-pointer transition-colors"
+                              className="px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1 cursor-pointer transition-all"
+                              style={{
+                                backgroundColor: "var(--bg-muted)",
+                                border: "1px solid var(--border-default)",
+                                color: "var(--teal-700)",
+                              }}
                               title={`Open ${act.activity_id} in Master Schedule`}
                             >
-                              <CalendarClock className="w-3 h-3" />
+                              <CalendarClock className="w-3.5 h-3.5" />
                               <span>Gantt</span>
                             </Link>
                             <button
@@ -602,11 +814,11 @@ export function ActivityDataGrid({
                                 e.stopPropagation();
                                 onSelectActivity(act.activity_id);
                               }}
-                              className={`p-1 rounded cursor-pointer ${
-                                isSelected
-                                  ? "text-cyan-400 bg-cyan-950/60"
-                                  : "text-slate-400 hover:text-slate-200"
-                              }`}
+                              className="p-1.5 rounded cursor-pointer transition-colors"
+                              style={{
+                                backgroundColor: isSelected ? "var(--teal-100)" : "transparent",
+                                color: isSelected ? "var(--teal-800)" : "var(--ink-500)",
+                              }}
                               title="Inspect 1D spatial footprint"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -616,7 +828,8 @@ export function ActivityDataGrid({
                                 e.stopPropagation();
                                 startEditing(act);
                               }}
-                              className="p-1 rounded text-slate-400 hover:text-cyan-300 hover:bg-slate-800 cursor-pointer"
+                              className="p-1.5 rounded hover:bg-slate-100 cursor-pointer transition-colors"
+                              style={{ color: "var(--ink-500)" }}
                               title="Inline edit activity"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -630,6 +843,55 @@ export function ActivityDataGrid({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination & Summary Bar */}
+        <div
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-6 py-4 border-t gap-3"
+          style={{
+            backgroundColor: "var(--bg-muted)",
+            borderColor: "var(--border-default)",
+          }}
+        >
+          <div className="text-xs" style={{ color: "var(--ink-600)" }}>
+            Showing <strong>{(currentPage - 1) * pageSize + 1}</strong> to{" "}
+            <strong>{Math.min(currentPage * pageSize, filteredActivities.length)}</strong> of{" "}
+            <strong>{filteredActivities.length}</strong> total activities
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              className="px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              style={{
+                backgroundColor: "var(--bg-surface)",
+                borderColor: "var(--border-default)",
+                color: "var(--ink-800)",
+              }}
+            >
+              <ChevronLeft size={14} />
+              <span>Previous</span>
+            </button>
+
+            <span className="px-3 py-1.5 text-xs font-mono font-medium" style={{ color: "var(--ink-700)" }}>
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              style={{
+                backgroundColor: "var(--bg-surface)",
+                borderColor: "var(--border-default)",
+                color: "var(--ink-800)",
+              }}
+            >
+              <span>Next</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

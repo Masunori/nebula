@@ -43,12 +43,24 @@ export function NetworkTopologyViewer({
   // Handle empty database state
   if (!lines || lines.length === 0 || !stations || stations.length === 0) {
     return (
-      <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-12 text-center space-y-4">
-        <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-slate-500">
-          <Train className="w-6 h-6" />
+      <div
+        className="rounded-2xl border p-16 text-center space-y-4"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border-default)",
+          boxShadow: "0 4px 20px -2px rgba(15, 25, 35, 0.04)",
+        }}
+      >
+        <div
+          className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
+          style={{ backgroundColor: "var(--bg-muted)", color: "var(--ink-500)" }}
+        >
+          <Train className="w-7 h-7" />
         </div>
-        <h3 className="text-base font-bold text-white">Network Topology Empty (Database Flushed)</h3>
-        <p className="text-xs text-slate-400 max-w-md mx-auto">
+        <h3 className="text-base font-bold" style={{ color: "var(--ink-900)" }}>
+          Network Topology Empty (Database Flushed)
+        </h3>
+        <p className="text-xs max-w-md mx-auto" style={{ color: "var(--ink-500)" }}>
           No railway lines, stations, or tunnel sectors are currently loaded. Use the Ingest / Flush menu to load the Official Baseline or upload custom CSV datasets.
         </p>
       </div>
@@ -173,22 +185,25 @@ export function NetworkTopologyViewer({
   }, [nodePositions, activeLineFilter]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       {/* Visualizer Controls Bar */}
       <div
-        className="section"
+        className="rounded-2xl border transition-all"
         style={{
-          padding: "12px 16px",
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border-default)",
+          boxShadow: "0 4px 20px -2px rgba(15, 25, 35, 0.04)",
+          padding: "20px 28px",
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 12,
+          gap: 16,
         }}
       >
         {/* Left: Line Filter Pills */}
-        <div className="flex items-center gap-1.5">
-          <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-500)", marginRight: 4 }}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-500)", marginRight: 4 }}>
             Graph Focus:
           </span>
           <button
@@ -213,52 +228,57 @@ export function NetworkTopologyViewer({
         </div>
 
         {/* Right: Legend & Zoom Controls */}
-        <div className="flex items-center gap-4">
-          <div className="hidden lg:flex items-center gap-3 text-[11px]" style={{ color: "var(--ink-500)" }}>
+        <div className="flex items-center gap-5">
+          <div className="hidden lg:flex items-center gap-3.5 text-xs font-medium" style={{ color: "var(--ink-600)" }}>
             {uniqueLineCodes.map((c) => {
               const th = getLineTheme(c);
               return (
-                <span key={c} className="flex items-center gap-1">
+                <span key={c} className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: th.stroke }}></span>
                   {th.name}
                 </span>
               );
             })}
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full inline-block ring-2 ring-purple-400/40" style={{ backgroundColor: "#a855f7" }}></span>
               Interchange Hub ★
             </span>
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <span className="w-3 h-1 inline-block rounded" style={{ backgroundColor: "#f43f5e" }}></span>
               Bottleneck (Cap: 1)
             </span>
           </div>
 
           <div
-            className="flex items-center gap-1 p-1 rounded-lg"
+            className="flex items-center gap-1.5 p-1.5 rounded-xl"
             style={{ backgroundColor: "var(--bg-muted)", border: "1px solid var(--border-default)" }}
           >
             <button
               onClick={() => setZoomLevel((z) => Math.min(z + 0.15, 1.6))}
               title="Zoom In"
-              className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-white cursor-pointer transition-colors"
+              style={{ color: "var(--ink-600)" }}
             >
-              <ZoomIn className="w-3.5 h-3.5" />
+              <ZoomIn className="w-4 h-4" />
             </button>
-            <span className="px-1 text-[10px] font-mono" style={{ color: "var(--ink-500)" }}>{Math.round(zoomLevel * 100)}%</span>
+            <span className="px-1.5 text-xs font-mono font-semibold" style={{ color: "var(--ink-700)" }}>
+              {Math.round(zoomLevel * 100)}%
+            </span>
             <button
               onClick={() => setZoomLevel((z) => Math.max(z - 0.15, 0.7))}
               title="Zoom Out"
-              className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-white cursor-pointer transition-colors"
+              style={{ color: "var(--ink-600)" }}
             >
-              <ZoomOut className="w-3.5 h-3.5" />
+              <ZoomOut className="w-4 h-4" />
             </button>
             <button
               onClick={() => setZoomLevel(1)}
               title="Reset Zoom"
-              className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-white cursor-pointer transition-colors"
+              style={{ color: "var(--ink-600)" }}
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -266,18 +286,30 @@ export function NetworkTopologyViewer({
 
       {/* SVG Railway Graph Canvas */}
       <div
-        className="section relative overflow-x-auto shadow-inner"
-        style={{ padding: 12, backgroundColor: "var(--bg-surface)" }}
+        className="rounded-2xl border relative overflow-x-auto transition-all"
+        style={{
+          padding: 24,
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border-default)",
+          boxShadow: "0 4px 20px -2px rgba(15, 25, 35, 0.04)",
+        }}
       >
         {/* Active Sector Selection Banner */}
         {selectedSectorId && (
-          <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-cyan-950/90 border border-cyan-500/80 text-cyan-200 text-xs flex items-center gap-2 shadow-lg backdrop-blur-sm animate-in fade-in">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+          <div
+            className="absolute top-6 left-6 z-10 px-4 py-2 rounded-xl text-xs flex items-center gap-2.5 shadow-md animate-in fade-in"
+            style={{
+              backgroundColor: "var(--teal-050)",
+              border: "1px solid var(--border-teal)",
+              color: "var(--teal-900)",
+            }}
+          >
+            <Sparkles className="w-4 h-4 text-teal-600 animate-pulse" />
             <span>Filtering Activity Grid to Sector:</span>
-            <strong className="font-mono text-white">{selectedSectorId}</strong>
+            <strong className="font-mono text-sm text-teal-800">{selectedSectorId}</strong>
             <button
               onClick={() => onSelectSector && onSelectSector("")}
-              className="ml-2 text-cyan-400 hover:text-white cursor-pointer"
+              className="ml-3 font-semibold text-teal-700 hover:underline cursor-pointer"
             >
               Clear
             </button>
@@ -287,50 +319,51 @@ export function NetworkTopologyViewer({
         {/* Hover Inspector Tooltip */}
         {(hoveredNode || hoveredEdge) && (
           <div
-            className="dialog-box"
+            className="rounded-xl border p-4"
             style={{
               position: "absolute",
-              bottom: 16,
-              right: 16,
+              bottom: 24,
+              right: 24,
               zIndex: 10,
-              padding: 12,
-              boxShadow: "var(--shadow-lg)",
+              backgroundColor: "var(--bg-surface)",
+              borderColor: "var(--border-default)",
+              boxShadow: "0 10px 25px -5px rgba(15, 25, 35, 0.12)",
               maxWidth: 320,
             }}
           >
             {hoveredNode && (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="font-bold font-mono text-sm" style={{ color: "var(--ink-900)" }}>{hoveredNode.id}</span>
-                  <span className="badge badge--pending font-mono text-[10px]">
+                  <span className="badge badge--pending font-mono text-xs">
                     {hoveredNode.line}
                   </span>
                 </div>
                 <p className="font-medium text-xs" style={{ color: "var(--ink-700)" }}>{hoveredNode.name}</p>
-                <div className="text-[11px] flex items-center gap-1 pt-1" style={{ color: "var(--ink-500)" }}>
+                <div className="text-xs flex items-center gap-1 pt-1" style={{ color: "var(--ink-500)" }}>
                   <span>Platform Capacity:</span>
                   <strong style={{ color: "var(--teal-700)" }}>{hoveredNode.cap} slots/night</strong>
                 </div>
               </div>
             )}
             {hoveredEdge && (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="font-bold font-mono text-xs" style={{ color: "var(--ink-900)" }}>{hoveredEdge.id}</span>
                   <span
-                    className={`badge font-bold font-mono text-[10px] ${
+                    className={`badge font-bold font-mono text-xs ${
                       hoveredEdge.cap === 1 ? "badge--invalid" : "badge--valid"
                     }`}
                   >
                     Cap: {hoveredEdge.cap}
                   </span>
                 </div>
-                <p className="text-[11px]" style={{ color: "var(--ink-500)" }}>
+                <p className="text-xs" style={{ color: "var(--ink-600)" }}>
                   {hoveredEdge.cap === 1
                     ? "Single-track bottleneck between interchange stations H01 and H02."
                     : "Standard double-track tunnel sector."}
                 </p>
-                <p className="text-[10px]" style={{ color: "var(--teal-700)", paddingTop: 2 }}>Click track to isolate activities in data grid</p>
+                <p className="text-[11px] font-semibold" style={{ color: "var(--teal-700)", paddingTop: 2 }}>Click track to isolate activities in data grid</p>
               </div>
             )}
           </div>

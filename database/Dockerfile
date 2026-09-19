@@ -16,6 +16,7 @@ COPY sql/02_spatial.sql /docker-entrypoint-initdb.d/02_spatial.sql
 COPY sql/03_seed_init.sql /docker-entrypoint-initdb.d/03_seed_init.sql
 COPY sql/04_views.sql /docker-entrypoint-initdb.d/04_views.sql
 COPY sql/05_seed_output.sql /docker-entrypoint-initdb.d/05_seed_output.sql
+COPY sql/06_preprocessed.sql /docker-entrypoint-initdb.d/06_preprocessed.sql
 
 EXPOSE 5432
 

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CalendarClock, Menu, Moon, X } from 'lucide-react';
 import { Tooltip } from './Tooltip';
+import { DatabaseStatusBadge } from './DatabaseStatusBadge';
 
 export function AppNav() {
   const pathname = usePathname();
@@ -41,6 +42,7 @@ export function AppNav() {
           <Link href="/upload" className={linkClass('/upload')}>Upload & Optimize</Link>
         </nav>
         <div className="nav-right">
+          <DatabaseStatusBadge />
           <div className="nav-status" aria-label="Current planning status">
             <span className="nav-status-dot" aria-hidden="true" />
             <span>Planning desk online</span>

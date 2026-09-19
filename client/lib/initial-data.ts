@@ -164,6 +164,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S01",
     "to_station_id": "S02",
     "length_meters": 1000,
+    "seq_order": 1,
     "supply_capacity": 4
   },
   {
@@ -172,6 +173,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S02",
     "to_station_id": "S03",
     "length_meters": 1000,
+    "seq_order": 2,
     "supply_capacity": 4
   },
   {
@@ -180,6 +182,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S03",
     "to_station_id": "S04",
     "length_meters": 1000,
+    "seq_order": 3,
     "supply_capacity": 4
   },
   {
@@ -188,6 +191,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S04",
     "to_station_id": "H01",
     "length_meters": 1000,
+    "seq_order": 4,
     "supply_capacity": 4
   },
   {
@@ -196,6 +200,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "H01",
     "to_station_id": "H02",
     "length_meters": 1000,
+    "seq_order": 5,
     "supply_capacity": 1
   },
   {
@@ -204,6 +209,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "H02",
     "to_station_id": "S05",
     "length_meters": 1000,
+    "seq_order": 6,
     "supply_capacity": 4
   },
   {
@@ -212,6 +218,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S05",
     "to_station_id": "S06",
     "length_meters": 1000,
+    "seq_order": 7,
     "supply_capacity": 4
   },
   {
@@ -220,6 +227,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S06",
     "to_station_id": "S07",
     "length_meters": 1000,
+    "seq_order": 8,
     "supply_capacity": 4
   },
   {
@@ -228,6 +236,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S07",
     "to_station_id": "S08",
     "length_meters": 1000,
+    "seq_order": 9,
     "supply_capacity": 4
   },
   {
@@ -236,6 +245,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S11",
     "to_station_id": "S12",
     "length_meters": 1000,
+    "seq_order": 1,
     "supply_capacity": 4
   },
   {
@@ -244,6 +254,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S12",
     "to_station_id": "S13",
     "length_meters": 1000,
+    "seq_order": 2,
     "supply_capacity": 4
   },
   {
@@ -252,6 +263,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S13",
     "to_station_id": "S14",
     "length_meters": 1000,
+    "seq_order": 3,
     "supply_capacity": 4
   },
   {
@@ -260,6 +272,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S14",
     "to_station_id": "H01",
     "length_meters": 1000,
+    "seq_order": 4,
     "supply_capacity": 4
   },
   {
@@ -268,6 +281,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "H01",
     "to_station_id": "H02",
     "length_meters": 1000,
+    "seq_order": 5,
     "supply_capacity": 1
   },
   {
@@ -276,6 +290,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "H02",
     "to_station_id": "S15",
     "length_meters": 1000,
+    "seq_order": 6,
     "supply_capacity": 4
   },
   {
@@ -284,6 +299,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S15",
     "to_station_id": "S16",
     "length_meters": 1000,
+    "seq_order": 7,
     "supply_capacity": 4
   },
   {
@@ -292,6 +308,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S16",
     "to_station_id": "S17",
     "length_meters": 1000,
+    "seq_order": 8,
     "supply_capacity": 4
   },
   {
@@ -300,6 +317,7 @@ export const INITIAL_SECTORS: Sector[] = [
     "from_station_id": "S17",
     "to_station_id": "S18",
     "length_meters": 1000,
+    "seq_order": 9,
     "supply_capacity": 4
   }
 ];
@@ -881,7 +899,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 3,
     "max_workfronts": 2,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-06-13"
+    "planned_completion_date": "2027-06-13",
+    "activity_type": "Renewal",
+    "nature_of_activity": "Non-live (Consist)"
   },
   {
     "contract_number": "C002",
@@ -891,7 +911,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 2,
     "max_workfronts": 1,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-07-04"
+    "planned_completion_date": "2027-07-04",
+    "activity_type": "Renewal",
+    "nature_of_activity": "Non-live (Consist)"
   },
   {
     "contract_number": "C003",
@@ -901,7 +923,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 1,
     "max_workfronts": 1,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-07-04"
+    "planned_completion_date": "2027-07-04",
+    "activity_type": "Construction",
+    "nature_of_activity": "Non-live (Others)"
   },
   {
     "contract_number": "C004",
@@ -911,7 +935,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 1,
     "max_workfronts": 1,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-07-25"
+    "planned_completion_date": "2027-07-25",
+    "activity_type": "Renewal",
+    "nature_of_activity": "Non-live (Consist)"
   },
   {
     "contract_number": "C005",
@@ -921,7 +947,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 3,
     "max_workfronts": 2,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-03-21"
+    "planned_completion_date": "2027-03-21",
+    "activity_type": "Renewal",
+    "nature_of_activity": "Non-live (Consist)"
   },
   {
     "contract_number": "C006",
@@ -931,7 +959,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 3,
     "max_workfronts": 1,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-07-04"
+    "planned_completion_date": "2027-07-04",
+    "activity_type": "Construction",
+    "nature_of_activity": "Non-live (Others)"
   },
   {
     "contract_number": "C007",
@@ -941,7 +971,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 1,
     "max_workfronts": 1,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-07-11"
+    "planned_completion_date": "2027-07-11",
+    "activity_type": "Renewal",
+    "nature_of_activity": "Non-live (Consist)"
   },
   {
     "contract_number": "C008",
@@ -951,7 +983,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 3,
     "max_workfronts": 1,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-07-18"
+    "planned_completion_date": "2027-07-18",
+    "activity_type": "Renewal",
+    "nature_of_activity": "Non-live (Consist)"
   },
   {
     "contract_number": "C009",
@@ -961,7 +995,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 3,
     "max_workfronts": 1,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-06-27"
+    "planned_completion_date": "2027-06-27",
+    "activity_type": "Construction",
+    "nature_of_activity": "Non-live (Others)"
   },
   {
     "contract_number": "C010",
@@ -971,7 +1007,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 3,
     "max_workfronts": 2,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-05-16"
+    "planned_completion_date": "2027-05-16",
+    "activity_type": "Construction",
+    "nature_of_activity": "Non-live (Others)"
   },
   {
     "contract_number": "C011",
@@ -981,7 +1019,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 2,
     "max_workfronts": 1,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-07-11"
+    "planned_completion_date": "2027-07-11",
+    "activity_type": "Renewal",
+    "nature_of_activity": "Non-live (Consist)"
   },
   {
     "contract_number": "C012",
@@ -991,7 +1031,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 1,
     "max_workfronts": 1,
     "max_access_per_week": 3,
-    "planned_completion_date": "2027-07-11"
+    "planned_completion_date": "2027-07-11",
+    "activity_type": "Construction",
+    "nature_of_activity": "Non-live (Others)"
   },
   {
     "contract_number": "C013",
@@ -1001,7 +1043,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 2,
     "max_workfronts": 1,
     "max_access_per_week": 2,
-    "planned_completion_date": "2027-05-30"
+    "planned_completion_date": "2027-05-30",
+    "activity_type": "Renewal",
+    "nature_of_activity": "Live"
   },
   {
     "contract_number": "C014",
@@ -1011,7 +1055,9 @@ export const INITIAL_CONTRACTS: Contract[] = [
     "priority": 3,
     "max_workfronts": 1,
     "max_access_per_week": 2,
-    "planned_completion_date": "2027-07-18"
+    "planned_completion_date": "2027-07-18",
+    "activity_type": "Construction",
+    "nature_of_activity": "Live"
   }
 ];
 

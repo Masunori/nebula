@@ -21,7 +21,7 @@ export function RunsTable({ runs, loading }: { runs: PlanningRun[]; loading: boo
           <th>Scenario</th>
           <th>Revision</th>
           <th>Validation</th>
-          <th>Score</th>
+          <th>Penalty Score</th>
           <th>Violations</th>
           <th>Editor</th>
           <th>Updated</th>
@@ -40,7 +40,7 @@ export function RunsTable({ runs, loading }: { runs: PlanningRun[]; loading: boo
                 {run.validationState}
               </Badge>
             </td>
-            <td className="font-mono">{run.objectiveScore ?? '——'}</td>
+            <td className="font-mono">{run.penaltyScore ?? run.objectiveScore ?? '——'}</td>
             <td>
               {run.hardViolationCount > 0 ? (
                 <Badge variant="invalid">{run.hardViolationCount}</Badge>

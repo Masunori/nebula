@@ -1,10 +1,11 @@
 'use client';
 import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createRun, simulateRunProgress } from '@/lib/api';
+import { createRun, simulateRunProgress, solveScenarioRemote } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle2, FileText, UploadCloud } from 'lucide-react';
 import type { Scenario } from '@/types/planning';
+import { parseRailwayCSV } from '@/lib/csv-parser';
 
 const REQUIRED_FILES = [
   '01_LINES.csv',
@@ -43,12 +44,48 @@ export default function UploadPage() {
       return;
     }
     setLoading(true);
+    setStatus('Reading and validating uploaded CSV files...');
     try {
-      const run = await createRun({ scenario, files: uploadedFiles });
-      await simulateRunProgress(run.runId, st => setStatus(st));
-      router.push(`/runs/${run.runId}`);
-    } catch {
-      setUploadError('The planning run could not be started. Please try again.');
+      const payload: Record<string, any[]> = {};
+
+      for (const file of uploadedFiles) {
+        const text = await file.text();
+        const { table, records } = parseRailwayCSV(file.name, text);
+        if (table && table !== 'unknown') {
+          payload[table] = records;
+        }
+      }
+
+      setStatus('Synchronizing railway network and activities to PostgreSQL...');
+      const syncRes = await fetch('/api/database/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!syncRes.ok) {
+        const err = await syncRes.text();
+        throw new Error(`Database synchronization failed: ${err}`);
+      }
+
+      setStatus(`Executing CP-SAT solver for Scenario ${scenario}...`);
+      const solveRes = await solveScenarioRemote(scenario, 30);
+      if (!solveRes.feasible) {
+        throw new Error('CP-SAT solver could not find a feasible schedule for the uploaded dataset.');
+      }
+
+      try {
+        const storageKey = 'nebulax_scenario_solutions_v1';
+        // Invalidate stale solution caches so schedule page fetches fresh timetable rows directly
+        localStorage.removeItem(storageKey);
+      } catch (e) {
+        console.warn('Could not clear stale solutions from localStorage', e);
+      }
+
+      setStatus('Schedule optimization complete! Loading Master Timetable...');
+      router.push(`/schedule?scenario=${scenario}`);
+    } catch (err: any) {
+      setUploadError(err.message || 'The planning run could not be started. Please try again.');
       setLoading(false);
     }
   };

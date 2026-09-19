@@ -17,6 +17,7 @@ flowchart TD
         RAW["Initial Datasets\n(Lines, Stations, Sectors, Supply)"]
         PARAM["Editable Parameters & Buffers\n(Horizon params, live/consist buffers)"]
         TOPOLOGY["1D Linear Spatial Coordinates\n(Discrete seq_coord 1..19)"]
+        PREPROC["Optimization Entities (06_preprocessed.sql)\n(Footprints, Groups, Conflict Graphs)"]
         VIEWS["Analytical & Audit Views\n(Capacity Heatmap, DAG Check, Scores)"]
         SCHEDULES["Schedule Tables (A / B / C)\n(RESULTS, SCHEDULE_ACCESS, OCCUPANCY)"]
     end
@@ -26,6 +27,8 @@ flowchart TD
 
     RAW --> TOPOLOGY
     PARAM --> TOPOLOGY
+    TOPOLOGY --> PREPROC
+    PREPROC --> SOLVER
     TOPOLOGY --> VIEWS
     VIEWS --> SOLVER
     SOLVER --> SCHEDULES
@@ -215,6 +218,7 @@ WHERE is_fs_precedence_valid = FALSE;
    psql "host=127.0.0.1 port=5432 dbname=nebula user=nebula_user" -f sql/03_seed_init.sql
    psql "host=127.0.0.1 port=5432 dbname=nebula user=nebula_user" -f sql/04_views.sql
    psql "host=127.0.0.1 port=5432 dbname=nebula user=nebula_user" -f sql/05_seed_output.sql
+   psql "host=127.0.0.1 port=5432 dbname=nebula user=nebula_user" -f sql/06_preprocessed.sql
    ```
 4. **FastAPI Server Connection**:
    In your Cloud Run service configuration for the backend:
@@ -228,3 +232,11 @@ The included `Dockerfile` is self-bootstrapping and contains all entrypoint init
 docker build -t asia-southeast1-docker.pkg.dev/PROJECT_ID/nebula/database:v1 .
 docker push asia-southeast1-docker.pkg.dev/PROJECT_ID/nebula/database:v1
 ```
+
+### Option C: Live Google Compute Engine VM Deployment (Current Production)
+In production, the database runs alongside the FastAPI solver and Next.js client on a single **Google Compute Engine VM** (`nebula-vm` at `136.107.86.146`) via `compose.prod.yaml`:
+- **Docker Compose Service**: `database` (PostgreSQL 16 Alpine).
+- **Persistent Storage**: Mapped to named Docker volume `database_pgdata`.
+- **Healthcheck**: Automated `pg_isready -U nebula_user -d nebula` with 5s interval, 5s timeout, 10s start period, and 3 retries.
+- **Auto-Initialization**: All 6 migration scripts (`01_schema.sql` through `06_preprocessed.sql`) are copied into `/docker-entrypoint-initdb.d/` and execute on initial database container creation.
+- **Internal Access Only**: Port 5432 is bound to `127.0.0.1:5432`, remaining strictly unexposed to external traffic for security while allowing direct access from `server` and `client` via Docker's internal DNS network.

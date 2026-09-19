@@ -248,7 +248,7 @@ export function ScheduleTelemetryBar({
             className="telemetry-chip telemetry-chip--highlight"
             title={
               scoreBreakdown
-                ? `Overrun: ${scoreBreakdown.overrunDays ?? 0}d | Excess: ${
+                ? `Delay Penalty: ${scoreBreakdown.priorityWeightedScore ?? 0} | Overrun: ${scoreBreakdown.overrunDays ?? 0}d | Excess: ${
                     scoreBreakdown.excessNights ?? 0
                   }n | ECLO: ${scoreBreakdown.ecloNights ?? 0}n`
                 : 'Calculated soft objective penalty score'

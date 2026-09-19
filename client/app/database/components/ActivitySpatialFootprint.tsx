@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ShieldCheck, ShieldAlert, Navigation, Info, Eye } from "lucide-react";
+import { ShieldCheck, ShieldAlert, Navigation } from "lucide-react";
 import type { ActivityFootprint, Activity } from "@/lib/types";
 
 interface ActivitySpatialFootprintProps {
@@ -19,7 +19,14 @@ export function ActivitySpatialFootprint({
 }: ActivitySpatialFootprintProps) {
   if (!footprint) {
     return (
-      <div className="p-6 bg-slate-900/60 rounded-xl border border-slate-800 text-center text-xs text-slate-400">
+      <div
+        className="p-8 rounded-2xl border text-center text-xs"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border-default)",
+          color: "var(--ink-500)",
+        }}
+      >
         Select an activity from the data grid to inspect its 1D spatial footprint and buffer envelopes.
       </div>
     );
@@ -29,35 +36,65 @@ export function ActivitySpatialFootprint({
   const coords = Array.from({ length: maxCoord }, (_, i) => i + 1);
 
   return (
-    <div className="bg-slate-900/80 rounded-xl border border-slate-800 p-5 space-y-4">
+    <div
+      className="rounded-2xl border transition-all"
+      style={{
+        backgroundColor: "var(--bg-surface)",
+        borderColor: "var(--border-default)",
+        boxShadow: "0 4px 20px -2px rgba(15, 25, 35, 0.04)",
+        padding: "24px 28px",
+      }}
+    >
       {/* Header & Activity Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-            <Navigation className="w-4 h-4" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b" style={{ borderColor: "var(--border-default)" }}>
+        <div className="flex items-center gap-3">
+          <div
+            style={{
+              padding: 10,
+              borderRadius: "var(--radius-md)",
+              backgroundColor: "var(--teal-050)",
+              border: "1px solid var(--border-teal)",
+              color: "var(--teal-700)",
+            }}
+          >
+            <Navigation className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-white">
+            <div className="flex items-center gap-2.5">
+              <h3 className="text-base font-bold" style={{ color: "var(--ink-900)" }}>
                 1D Linear Spatial Footprint & Safety Buffer Envelope
               </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 border border-cyan-800 text-cyan-300 font-bold">
+              <span
+                className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold"
+                style={{
+                  backgroundColor: "var(--teal-050)",
+                  border: "1px solid var(--border-teal)",
+                  color: "var(--teal-800)",
+                }}
+              >
                 {footprint.activity_id}
               </span>
             </div>
-            <p className="text-xs text-slate-400">
-              Discrete coordinate span ($1 \dots {maxCoord}$) with upstream, downstream, and opposing track buffers
+            <p className="text-xs mt-0.5" style={{ color: "var(--ink-500)" }}>
+              Discrete coordinate span (1 &hellip; {maxCoord}) with upstream, downstream, and opposing track buffers
             </p>
           </div>
         </div>
 
         {/* Quick Activity Dropdown Switcher */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400">Select Activity:</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-medium" style={{ color: "var(--ink-600)" }}>
+            Select Activity:
+          </span>
           <select
             value={selectedActivityId}
             onChange={(e) => onSelectActivity(e.target.value)}
-            className="px-2.5 py-1 text-xs rounded-lg bg-slate-800 border border-slate-700 text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+            className="px-3 py-2 text-xs rounded-lg font-mono cursor-pointer transition-all"
+            style={{
+              backgroundColor: "var(--bg-page)",
+              border: "1px solid var(--border-default)",
+              color: "var(--ink-900)",
+            }}
           >
             {activities.map((a) => (
               <option key={a.activity_id} value={a.activity_id}>
@@ -69,35 +106,67 @@ export function ActivitySpatialFootprint({
       </div>
 
       {/* Activity Details Summary Card */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-        <div className="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/60">
-          <span className="text-[10px] text-slate-400 block uppercase font-medium">Contract / Line</span>
-          <span className="font-semibold text-white font-mono">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 text-xs">
+        <div
+          className="p-3.5 rounded-xl border"
+          style={{
+            backgroundColor: "var(--bg-page)",
+            borderColor: "var(--border-default)",
+          }}
+        >
+          <span className="text-[10px] uppercase font-bold tracking-wider block" style={{ color: "var(--ink-500)" }}>
+            Contract / Line
+          </span>
+          <span className="font-semibold font-mono mt-1 block" style={{ color: "var(--ink-900)" }}>
             {footprint.contract_number} ({footprint.line_code}) &middot; Track {footprint.bound}
           </span>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/60">
-          <span className="text-[10px] text-slate-400 block uppercase font-medium">Working Span</span>
-          <span className="font-semibold text-cyan-400 font-mono">
+        <div
+          className="p-3.5 rounded-xl border"
+          style={{
+            backgroundColor: "var(--bg-page)",
+            borderColor: "var(--border-default)",
+          }}
+        >
+          <span className="text-[10px] uppercase font-bold tracking-wider block" style={{ color: "var(--ink-500)" }}>
+            Working Span
+          </span>
+          <span className="font-semibold font-mono mt-1 block" style={{ color: "var(--teal-700)" }}>
             {footprint.station_from} → {footprint.station_to} (Coord {footprint.start_coord}..{footprint.end_coord})
           </span>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/60">
-          <span className="text-[10px] text-slate-400 block uppercase font-medium">Safety Buffer Rule</span>
-          <span className="font-semibold text-amber-400 font-mono">
+        <div
+          className="p-3.5 rounded-xl border"
+          style={{
+            backgroundColor: "var(--bg-page)",
+            borderColor: "var(--border-default)",
+          }}
+        >
+          <span className="text-[10px] uppercase font-bold tracking-wider block" style={{ color: "var(--ink-500)" }}>
+            Safety Buffer Rule
+          </span>
+          <span className="font-semibold font-mono mt-1 block" style={{ color: "var(--orange-700)" }}>
             {footprint.buffer_sectors} sector(s) &middot; {footprint.nature_of_works}
           </span>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/60">
-          <span className="text-[10px] text-slate-400 block uppercase font-medium">Opposite Bound Protection</span>
-          <span className="font-semibold font-mono flex items-center gap-1">
+        <div
+          className="p-3.5 rounded-xl border"
+          style={{
+            backgroundColor: "var(--bg-page)",
+            borderColor: "var(--border-default)",
+          }}
+        >
+          <span className="text-[10px] uppercase font-bold tracking-wider block" style={{ color: "var(--ink-500)" }}>
+            Opposite Bound Protection
+          </span>
+          <span className="font-semibold font-mono mt-1 flex items-center gap-1">
             {footprint.requires_opposite_bound ? (
-              <span className="text-rose-400 flex items-center gap-1">
-                <ShieldAlert className="w-3.5 h-3.5" /> Enforced (Live Track)
+              <span className="text-rose-700 flex items-center gap-1 font-bold">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-600" /> Enforced (Live Track)
               </span>
             ) : (
-              <span className="text-slate-400 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Not Required
+              <span className="text-emerald-700 flex items-center gap-1 font-semibold">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Not Required
               </span>
             )}
           </span>
@@ -105,30 +174,38 @@ export function ActivitySpatialFootprint({
       </div>
 
       {/* 1D Visual Coordinate Track Bar */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between text-[11px] text-slate-400">
-          <span className="font-mono">Primary Track: {footprint.bound}</span>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-cyan-500"></span> Working Span [{footprint.start_coord}..{footprint.end_coord}]
+      <div className="space-y-4 pt-5">
+        <div className="flex items-center justify-between text-xs" style={{ color: "var(--ink-600)" }}>
+          <span className="font-mono font-semibold">Primary Track: {footprint.bound}</span>
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded" style={{ backgroundColor: "var(--teal-600)" }}></span>
+              <span>Working Span [{footprint.start_coord}..{footprint.end_coord}]</span>
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-amber-500/40 border border-amber-400"></span> Buffer Envelope [{footprint.buffer_start_coord}..{footprint.buffer_end_coord}]
+            <span className="flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded border" style={{ backgroundColor: "var(--status-amber-bg)", borderColor: "var(--status-amber-border)" }}></span>
+              <span>Buffer Envelope [{footprint.buffer_start_coord}..{footprint.buffer_end_coord}]</span>
             </span>
           </div>
         </div>
 
         {/* Primary Bound Bar */}
-        <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1 overflow-x-auto">
+        <div
+          className="p-4 rounded-xl border space-y-2 overflow-x-auto"
+          style={{
+            backgroundColor: "var(--bg-page)",
+            borderColor: "var(--border-default)",
+          }}
+        >
           {/* Coordinate Numbers */}
-          <div className="grid grid-cols-19 gap-1 text-[10px] text-slate-500 font-mono text-center min-w-[600px]">
+          <div className="grid grid-cols-19 gap-1 text-[11px] font-mono text-center min-w-[620px]" style={{ color: "var(--ink-500)" }}>
             {coords.map((c) => (
               <span key={c}>{c}</span>
             ))}
           </div>
 
           {/* Coordinate Blocks */}
-          <div className="grid grid-cols-19 gap-1 h-7 min-w-[600px]">
+          <div className="grid grid-cols-19 gap-1 h-8 min-w-[620px]">
             {coords.map((c) => {
               const isWork = c >= footprint.start_coord && c <= footprint.end_coord;
               const isBuffer =
@@ -140,13 +217,20 @@ export function ActivitySpatialFootprint({
                 <div
                   key={c}
                   title={`Coordinate ${c}: ${isWork ? "Active Work Zone" : isBuffer ? "Safety Buffer Margin" : "Clear Track"}`}
-                  className={`rounded flex items-center justify-center text-[10px] font-mono font-bold transition-all ${
-                    isWork
-                      ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20"
+                  className="rounded flex items-center justify-center text-[10px] font-mono font-bold transition-all shadow-xs"
+                  style={{
+                    backgroundColor: isWork
+                      ? "var(--teal-600)"
                       : isBuffer
-                      ? "bg-amber-500/30 border border-amber-400 text-amber-200"
-                      : "bg-slate-800 text-slate-600"
-                  }`}
+                      ? "var(--status-amber-bg)"
+                      : "var(--bg-muted)",
+                    color: isWork
+                      ? "#ffffff"
+                      : isBuffer
+                      ? "var(--orange-800)"
+                      : "var(--ink-400)",
+                    border: isBuffer ? "1px solid var(--status-amber-border)" : "1px solid transparent",
+                  }}
                 >
                   {isWork ? "WORK" : isBuffer ? "BUF" : "·"}
                 </div>
@@ -157,17 +241,23 @@ export function ActivitySpatialFootprint({
 
         {/* Opposing Bound Projection (If Live Track Work) */}
         {footprint.requires_opposite_bound && (
-          <div className="space-y-1 pt-1">
-            <div className="flex items-center justify-between text-[11px] text-rose-400 font-mono">
-              <span className="flex items-center gap-1">
-                <ShieldAlert className="w-3.5 h-3.5" />
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between text-xs font-mono font-bold" style={{ color: "var(--status-red)" }}>
+              <span className="flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4" />
                 Opposite Track ({footprint.bound === "EB" ? "WB" : "EB"}) Live Safety Exclusion Zone
               </span>
               <span>Coordinates: [{footprint.buffer_start_coord}..{footprint.buffer_end_coord}]</span>
             </div>
 
-            <div className="bg-slate-950 p-2.5 rounded-lg border border-rose-950/60 overflow-x-auto">
-              <div className="grid grid-cols-19 gap-1 h-5 min-w-[600px]">
+            <div
+              className="p-3.5 rounded-xl border overflow-x-auto"
+              style={{
+                backgroundColor: "var(--status-red-bg)",
+                borderColor: "var(--status-red-border)",
+              }}
+            >
+              <div className="grid grid-cols-19 gap-1 h-6 min-w-[620px]">
                 {coords.map((c) => {
                   const isOppositeBlocked =
                     c >= footprint.buffer_start_coord && c <= footprint.buffer_end_coord;
@@ -176,11 +266,11 @@ export function ActivitySpatialFootprint({
                     <div
                       key={c}
                       title={`Opposite Track Coord ${c}: ${isOppositeBlocked ? "Blocked by Live Track Buffer" : "Clear"}`}
-                      className={`rounded flex items-center justify-center text-[9px] font-mono ${
-                        isOppositeBlocked
-                          ? "bg-rose-950/80 border border-rose-600 text-rose-300 font-bold"
-                          : "bg-slate-900 text-slate-700"
-                      }`}
+                      className="rounded flex items-center justify-center text-[10px] font-mono font-bold"
+                      style={{
+                        backgroundColor: isOppositeBlocked ? "var(--status-red)" : "transparent",
+                        color: isOppositeBlocked ? "#ffffff" : "var(--ink-400)",
+                      }}
                     >
                       {isOppositeBlocked ? "X" : "·"}
                     </div>

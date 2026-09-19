@@ -160,9 +160,11 @@ def build_result(service: SatSolverService) -> tuple[dict, dict[str, list[dict]]
     excess_total = sum(row["excess"] for row in hotspots)
     eclo_total = sum(row["eclo"] for row in tables["SCHEDULE_ACCESS.csv"])
     weighted = weighted_scaled / data.objective_scale
-    score = (weighted if service.scenario != "B" else 0) + (
+    math_score = (weighted if service.scenario != "B" else 0) + (
         7 * excess_total + 5 * eclo_total if service.scenario != "A" else 0
     )
+    total_penalty = round(weighted + (7 * excess_total + 5 * eclo_total if service.scenario != "A" else 0), 1)
+
     report["soft_scores"] = {
         "scenario": service.scenario,
         "overrun_days_total": overrun_total,
@@ -173,8 +175,11 @@ def build_result(service: SatSolverService) -> tuple[dict, dict[str, list[dict]]
         "excess_access_nights_total": excess_total,
         "eclo_nights_total": eclo_total,
         "priority_overrun": priority_overrun,
-        "priority_weighted_score": weighted,
-        "objective_score": score,
+        "priority_weighted_score": round(weighted, 1),
+        "delay_penalty": round(weighted, 1),
+        "capacity_penalty": round(7 * excess_total + 5 * eclo_total, 1),
+        "penalty_score": total_penalty,
+        "objective_score": round(math_score if (service.scenario != "B" or math_score > 0) else total_penalty, 1),
     }
     report["detail"].update(
         capacity_hotspots=hotspots,

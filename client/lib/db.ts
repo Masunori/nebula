@@ -24,6 +24,7 @@ import {
   INITIAL_CONTRACTS,
   INITIAL_ACTIVITIES,
 } from "./initial-data";
+import { getPresetDatasetState } from "./csv-parser";
 
 // In-memory working copy fallback (persists during process lifetime)
 let memLines: Line[] = [...INITIAL_LINES];
@@ -194,41 +195,42 @@ export async function getActivities(line?: string, priority?: number, search?: s
         a.activity_id,
         a.contract_number,
         c.contract_description,
-        c.activity_type,
+        a.activity_type,
         c.nature_of_activity as nature_of_works,
+        a.start_location_id,
+        a.end_location_id,
         a.start_location_id as station_from,
         a.end_location_id as station_to,
-        c.access_type as track_bound,
+        COALESCE(ls.bound, 'EB') as track_bound,
         a.total_accesses,
         to_char(a.planned_start_date, 'YYYY-MM-DD') as planned_start_date,
         a.predecessor_activity_id,
         a.activity_priority as priority,
-        'ALP' as line_code
+        COALESCE(ls.line_code, 'ALP') as line_code
       FROM nebula.activities a
       JOIN nebula.contracts c ON a.contract_number = c.contract_number
+      LEFT JOIN nebula.location_supply ls ON a.start_location_id = ls.location_id
       ORDER BY a.activity_id
     `);
 
-    if (rows && rows.length > 0) {
-      let list = rows;
-      if (line && line !== "ALL") {
-        list = list.filter((a) => a.line_code === line);
-      }
-      if (priority) {
-        list = list.filter((a) => a.priority === priority);
-      }
-      if (search) {
-        const q = search.toLowerCase();
-        list = list.filter(
-          (a) =>
-            a.activity_id.toLowerCase().includes(q) ||
-            a.contract_number.toLowerCase().includes(q) ||
-            (a.station_from && a.station_from.toLowerCase().includes(q)) ||
-            (a.station_to && a.station_to.toLowerCase().includes(q))
-        );
-      }
-      return { count: list.length, activities: list };
+    let list = rows || [];
+    if (line && line !== "ALL") {
+      list = list.filter((a) => a.line_code === line);
     }
+    if (priority) {
+      list = list.filter((a) => a.priority === priority);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.activity_id.toLowerCase().includes(q) ||
+          a.contract_number.toLowerCase().includes(q) ||
+          (a.station_from && a.station_from.toLowerCase().includes(q)) ||
+          (a.station_to && a.station_to.toLowerCase().includes(q))
+      );
+    }
+    return { count: list.length, activities: list };
   }
 
   let list = memActivities;
@@ -244,11 +246,43 @@ export async function getActivities(line?: string, priority?: number, search?: s
       (a) =>
         a.activity_id.toLowerCase().includes(q) ||
         a.contract_number.toLowerCase().includes(q) ||
-        a.station_from.toLowerCase().includes(q) ||
-        a.station_to.toLowerCase().includes(q)
+        (a.station_from && a.station_from.toLowerCase().includes(q)) ||
+        (a.station_to && a.station_to.toLowerCase().includes(q))
     );
   }
   return { count: list.length, activities: list };
+}
+
+export async function getContracts(): Promise<{ count: number; contracts: Contract[] }> {
+  const pgUp = await isPostgresAvailable();
+  if (pgUp) {
+    const rows = await queryPg<Contract>(`
+      SELECT
+        contract_number,
+        contractor_name,
+        description,
+        contract_description,
+        to_char(contract_award_date, 'YYYY-MM-DD') as contract_award_date,
+        line_code,
+        contract_priority as priority,
+        contract_priority,
+        number_of_workfronts as max_workfronts,
+        number_of_workfronts,
+        number_of_maximum_access_per_week as max_access_per_week,
+        number_of_maximum_access_per_week,
+        to_char(planned_completion_date, 'YYYY-MM-DD') as planned_completion_date,
+        to_char(contract_completion_date, 'YYYY-MM-DD') as contract_completion_date,
+        activity_type,
+        nature_of_activity,
+        access_type
+      FROM nebula.contracts
+      ORDER BY contract_number
+    `);
+    if (rows) {
+      return { count: rows.length, contracts: rows };
+    }
+  }
+  return { count: memContracts.length, contracts: memContracts };
 }
 
 export async function getDAGReport(): Promise<DAGReport> {
@@ -367,7 +401,7 @@ async function flushFastApi() {
 
 async function syncMemToFastApi() {
   try {
-    await fetch(`${FASTAPI_URL}/api/database/sync`, {
+    const res = await fetch(`${FASTAPI_URL}/api/database/sync`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -381,7 +415,16 @@ async function syncMemToFastApi() {
         activities: memActivities,
       }),
     });
-  } catch {}
+    if (!res.ok) {
+      const txt = await res.text();
+      console.error("syncMemToFastApi failed:", res.status, txt);
+      throw new Error(`Backend sync failed (${res.status}): ${txt}`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("Could not sync in-memory records to FastAPI backend:", err);
+    throw err;
+  }
 }
 
 export async function flushDatabaseRecords() {
@@ -427,25 +470,17 @@ export async function ingestDatabaseRecords(table: string, records: any[]) {
 }
 
 export async function loadPresetDataset(presetName: string, stateData?: any) {
-  if (stateData) {
-    if (stateData.lines) memLines = stateData.lines;
-    if (stateData.stations) memStations = stateData.stations;
-    if (stateData.sectors) memSectors = stateData.sectors;
-    if (stateData.locationSupply) memSupply = stateData.locationSupply;
-    if (stateData.bufferRules) memBufferRules = stateData.bufferRules;
-    if (stateData.parameters) memParameters = stateData.parameters;
-    if (stateData.contracts) memContracts = stateData.contracts;
-    if (stateData.activities) memActivities = stateData.activities;
-  } else {
-    // Reset to baseline default
-    memLines = [...INITIAL_LINES];
-    memStations = [...INITIAL_STATIONS];
-    memSectors = [...INITIAL_SECTORS];
-    memSupply = [...INITIAL_LOCATION_SUPPLY];
-    memBufferRules = [...INITIAL_BUFFER_RULES];
-    memParameters = [...INITIAL_PARAMETERS];
-    memContracts = [...INITIAL_CONTRACTS];
-    memActivities = [...INITIAL_ACTIVITIES];
+  const dataset = stateData || getPresetDatasetState(presetName as any);
+  console.log("loadPresetDataset presetName:", presetName, "dataset activities:", dataset?.activities?.length, "lines:", dataset?.lines?.length);
+  if (dataset) {
+    if (dataset.lines) memLines = dataset.lines;
+    if (dataset.stations) memStations = dataset.stations;
+    if (dataset.sectors) memSectors = dataset.sectors;
+    if (dataset.locationSupply) memSupply = dataset.locationSupply;
+    if (dataset.bufferRules) memBufferRules = dataset.bufferRules;
+    if (dataset.parameters) memParameters = dataset.parameters;
+    if (dataset.contracts) memContracts = dataset.contracts;
+    if (dataset.activities) memActivities = dataset.activities;
   }
 
   await syncMemToFastApi();
@@ -455,5 +490,6 @@ export async function loadPresetDataset(presetName: string, stateData?: any) {
     dataset: presetName,
     activities_count: memActivities.length,
     stations_count: memStations.length,
+    lines_count: memLines.length,
   };
 }

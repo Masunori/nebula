@@ -2,6 +2,7 @@ from datetime import date
 
 from ortools.sat.python import cp_model
 from .csv_preprocessor import preprocess_directory
+from .db_preprocessor_sync import load_prepared_problem_from_postgres
 from ..models.preprocessed_data import PreparedProblem
 
 from pydantic import BaseModel, ConfigDict, Field, PositiveInt
@@ -536,7 +537,7 @@ class SatSolverService:
         self.model = cp_model.CpModel()
         self.solver = cp_model.CpSolver()
         self.status = None
-        self.data = preprocess_directory()
+        self.data = load_prepared_problem_from_postgres()
         # At most K_l + delta groups can be used in A/C; labels are interchangeable.
         excess = self.data.scenarios[scenario].max_supply_excess
         if excess is not None:

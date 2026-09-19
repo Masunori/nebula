@@ -181,6 +181,142 @@ docker compose -f compose.prod.yaml down
 
 ---
 
+### Option D: Google Cloud Platform (GCP) Deployment
+
+The entire 3-tier architecture (PostgreSQL database, FastAPI solver engine, and Next.js frontend) is deployed to a unified Google Cloud Compute Engine instance with Docker Compose and an Nginx reverse proxy.
+
+#### 1. Architecture & Live Endpoints
+
+- **Live Public URL**: **[http://136.107.86.146/](http://136.107.86.146/)**
+- **Public Entrypoint**: Nginx (Port `80`) acts as a reverse proxy forwarding web traffic to Next.js on port `3000`.
+- **Internal Networking**: Next.js communicates with FastAPI over the internal Docker bridge network at `http://server:8000`. FastAPI connects directly to PostgreSQL at `postgresql://nebula_user:nebula_password@database:5432/nebula`.
+- **Firewall & Security**: Only Ports `80` (HTTP) and `3000` (Next.js) are exposed externally via GCP VPC firewall rules. PostgreSQL (`5432`) and FastAPI (`8000`) remain secured and accessible only within the internal Docker network.
+
+| Component | GCP Resource / Service | Specification | Access Scope |
+| :--- | :--- | :--- | :--- |
+| **Compute VM** | Google Compute Engine | `e2-standard-4` (4 vCPUs, 16 GB RAM) in `us-east4-a` | External IP: `136.107.86.146` |
+| **Web Server** | Nginx Reverse Proxy | Debian package `nginx` | Port `80` -> `127.0.0.1:3000` |
+| **Client** | Next.js 16 Standalone Container | `client/Dockerfile.prod` | Port `3000` (Healthy) |
+| **Server** | FastAPI Engine Container | `server/Dockerfile.prod` | Port `8000` (Healthy) |
+| **Database** | PostgreSQL 16 Alpine Container | `database/Dockerfile` + volume `database_pgdata` | Port `5432` (Healthy) |
+
+---
+
+#### 2. Step-by-Step GCP Deployment Commands
+
+##### Step A: Create VPC Firewall Rule
+Allow incoming HTTP traffic on port 80 and web port 3000:
+```powershell
+gcloud compute firewall-rules create allow-nebula-web `
+    --direction=INGRESS `
+    --priority=1000 `
+    --network=default `
+    --action=ALLOW `
+    --rules=tcp:80,tcp:3000 `
+    --source-ranges=0.0.0.0/0 `
+    --target-tags=nebula-web
+```
+
+##### Step B: Provision Compute Engine Instance
+Provision an `e2-standard-4` instance with 4 vCPUs and 16 GB RAM to provide ample compute capacity for multi-threaded OR-Tools CP-SAT solving:
+```powershell
+gcloud compute instances create nebula-vm `
+    --zone=us-east4-a `
+    --machine-type=e2-standard-4 `
+    --image-family=debian-12 `
+    --image-project=debian-cloud `
+    --boot-disk-size=50GB `
+    --boot-disk-type=pd-balanced `
+    --tags=nebula-web,http-server
+```
+
+##### Step C: Install System Packages & Docker Compose v2 on the VM
+Connect via Google Cloud Identity-Aware Proxy (IAP) and install Docker, Docker Compose v2, and Nginx:
+```powershell
+gcloud compute ssh nebula-vm --zone=us-east4-a --tunnel-through-iap --command="
+sudo apt-get update -y &&
+sudo apt-get install -y docker.io git curl nginx &&
+sudo systemctl enable --now docker &&
+sudo curl -SL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose &&
+sudo chmod +x /usr/local/bin/docker-compose
+"
+```
+
+##### Step D: Package & Upload Repository
+Create a clean archive excluding local dependencies and transfer via IAP SCP:
+```powershell
+# Create compact tarball
+tar -czf deploy.tar.gz --exclude="client/node_modules" --exclude="client/.next" --exclude="*.pyc" --exclude="__pycache__" --exclude=".git" client database server compose.prod.yaml compose.local.yaml scripts docs
+
+# Upload to the VM
+gcloud compute scp --zone=us-east4-a --tunnel-through-iap deploy.tar.gz nebula-vm:deploy.tar.gz --quiet
+
+# Extract on the VM
+gcloud compute ssh nebula-vm --zone=us-east4-a --tunnel-through-iap --command="mkdir -p ~/nebula && tar -xzf ~/deploy.tar.gz -C ~/nebula" --quiet
+```
+
+##### Step E: Configure Nginx Reverse Proxy
+Route public port 80 traffic to Next.js on `127.0.0.1:3000`:
+```powershell
+# Upload nginx.conf to the VM and apply:
+gcloud compute scp --zone=us-east4-a --tunnel-through-iap nginx.conf nebula-vm:nebula/nginx.conf --quiet
+gcloud compute ssh nebula-vm --zone=us-east4-a --tunnel-through-iap --command="sudo cp ~/nebula/nginx.conf /etc/nginx/sites-available/default && sudo nginx -t && sudo systemctl restart nginx" --quiet
+```
+
+##### Step F: Build & Launch Docker Compose Stack
+```powershell
+gcloud compute ssh nebula-vm --zone=us-east4-a --tunnel-through-iap --command="cd ~/nebula && sudo docker-compose -f compose.prod.yaml up -d --build" --quiet
+```
+
+---
+
+#### 3. Verification & Live Health Checks
+
+Verify all 3 services are active and healthy:
+```powershell
+# 1. Check container health status
+gcloud compute ssh nebula-vm --zone=us-east4-a --tunnel-through-iap --command="cd ~/nebula && sudo docker-compose -f compose.prod.yaml ps" --quiet
+
+# Expected Output:
+# nebula-prod-client-1     Up (healthy)   0.0.0.0:3000->3000/tcp
+# nebula-prod-database-1   Up (healthy)   127.0.0.1:5432->5432/tcp
+# nebula-prod-server-1     Up (healthy)   127.0.0.1:8000->8000/tcp
+
+# 2. Check public HTTP web access
+curl.exe -sI http://136.107.86.146/
+# Output: HTTP/1.1 200 OK (Served by Next.js via Nginx)
+
+# 3. Check database integration API
+curl.exe -s http://136.107.86.146/api/database/overview
+# Output: JSON payload confirming 2 lines, 20 stations, 18 sectors, 54 activities
+
+# 4. Trigger production CP-SAT optimization solve
+curl.exe -s -X POST http://136.107.86.146/api/solver/solve `
+    -H "Content-Type: application/json" `
+    -d '{"scenario":"A","max_time_seconds":30,"sync_db":true}'
+# Output: {"scenario":"A","feasible":true,"detail":{"solver_status":"OPTIMAL","wall_time_seconds":8.47,...}}
+```
+
+---
+
+#### 4. Operational Management & Logs
+
+```powershell
+# SSH into the VM (via Google Cloud IAP)
+gcloud compute ssh nebula-vm --zone=us-east4-a --tunnel-through-iap
+
+# Tail real-time solver logs
+sudo docker-compose -f ~/nebula/compose.prod.yaml logs -f server
+
+# Tail real-time web client logs
+sudo docker-compose -f ~/nebula/compose.prod.yaml logs -f client
+
+# Restart any individual service
+sudo docker-compose -f ~/nebula/compose.prod.yaml restart server
+```
+
+---
+
 ## 5. Repository Directory Structure
 
 ```text
@@ -240,6 +376,7 @@ nebula/
 | **Client & Database API Suite** | `client/` | `npm run test:api` | **PASS** (9/9 suites pass) |
 | **TUI Interactive Regression** | `database/` | `python scripts/test_all_tui_options.py` | **PASS** (10/10 options pass) |
 | **Docker Compose Config** | Root | `docker compose -f compose.local.yaml config` | **VALID** |
+| **Google Cloud Live Stack** | `nebula-vm` (`136.107.86.146`) | `docker-compose -f compose.prod.yaml ps` | **PASS** (3/3 services healthy, CP-SAT solve certified) |
 
 ## Stub solve endpoint
 

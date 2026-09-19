@@ -19,6 +19,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
 import { SchedulePreCalculationCard } from '@/components/schedule/SchedulePreCalculationCard';
 import { ScheduleTelemetryBar } from '@/components/schedule/ScheduleTelemetryBar';
+import { DatabaseStatusBadge } from '@/components/ui/DatabaseStatusBadge';
+import { DisruptionControl } from '@/components/planning/DisruptionControl';
 import Link from 'next/link';
 import {
   Download,
@@ -115,7 +117,13 @@ function ScheduleContent() {
       const stored = localStorage.getItem('nebulax_scenario_solutions_v1');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed && typeof parsed === 'object') {
+        if (
+          parsed &&
+          typeof parsed === 'object' &&
+          parsed[selectedScenario]?.rows &&
+          Array.isArray(parsed[selectedScenario].rows) &&
+          parsed[selectedScenario].rows.length > 0
+        ) {
           setSolvedSchedules(parsed);
           return;
         }
@@ -131,7 +139,12 @@ function ScheduleContent() {
         if (data && data.has_solution) {
           getTimetable(`run-${selectedScenario.toLowerCase()}`, selectedScenario)
             .then((rows) => {
-              const baseScore = data.soft_scores?.objective_score ?? 0;
+              const baseScore =
+                data.soft_scores?.penalty_score ??
+                (data.soft_scores?.objective_score !== 0
+                  ? data.soft_scores?.objective_score
+                  : data.soft_scores?.priority_weighted_score) ??
+                0;
               const rec: SolvedScheduleRecord = {
                 scenario: selectedScenario,
                 solvedTimestamp: data.timestamp,
@@ -169,7 +182,7 @@ function ScheduleContent() {
                   validationLog: data.validation_log || [],
                   validatedAt: data.timestamp,
                   capacityHotspots: [],
-                  nightsScheduled: 193,
+                  nightsScheduled: rows.length,
                   ecloNights: data.soft_scores?.eclo_nights_total ?? 0,
                 },
                 runId: `run-${selectedScenario.toLowerCase()}-persisted`,
@@ -332,8 +345,10 @@ function ScheduleContent() {
 
       const audit = await validateScheduleRemote(selectedScenario, accessRows, occupancyRows);
       const newScore =
-        audit?.soft_scores?.objective_score ??
-        audit?.soft_scores?.priority_weighted_score ??
+        audit?.soft_scores?.penalty_score ??
+        (audit?.soft_scores?.objective_score !== 0
+          ? audit?.soft_scores?.objective_score
+          : audit?.soft_scores?.priority_weighted_score) ??
         currentSolution.score;
       const baseline = currentSolution.baselineScore ?? currentSolution.score;
       const delta = Number((newScore - baseline).toFixed(2));
@@ -444,7 +459,12 @@ function ScheduleContent() {
       const result = await solveScenarioRemote(selectedScenario, solveBudgetSeconds);
       if (result.feasible) {
         const wallTime = result.detail?.wall_time_seconds ?? solveBudgetSeconds;
-        const score = result.soft_scores?.objective_score ?? 0;
+        const score =
+          result.soft_scores?.penalty_score ??
+          (result.soft_scores?.objective_score !== 0
+            ? result.soft_scores?.objective_score
+            : result.soft_scores?.priority_weighted_score) ??
+          0;
         const status = result.detail?.solver_status === 'OPTIMAL' || result.detail?.objective_optimized ? 'OPTIMAL' : 'FEASIBLE';
         const timestamp = new Date().toISOString();
 
@@ -493,7 +513,7 @@ function ScheduleContent() {
             validationLog,
             validatedAt: timestamp,
             capacityHotspots: [],
-            nightsScheduled: 193,
+            nightsScheduled: timetableRows.length,
             ecloNights: result.soft_scores?.eclo_nights_total ?? 0,
           },
           runId: `run-${selectedScenario.toLowerCase()}-${Date.now()}`,
@@ -507,9 +527,13 @@ function ScheduleContent() {
           return next;
         });
 
+        const datasetInfo = result.dataset_signature?.lines_count
+          ? ` on ${result.dataset_signature.lines_count} lines (${result.dataset_signature.activities_count} activities)`
+          : '';
+
         setSolveFeedback({
           type: 'success',
-          message: `Scenario ${selectedScenario} verified and solved in ${wallTime.toFixed(1)}s! Objective Score: ${score}`,
+          message: `Scenario ${selectedScenario} verified and solved in ${wallTime.toFixed(1)}s${datasetInfo}! Penalty Score: ${score}`,
         });
       } else {
         setSolveFeedback({
@@ -598,6 +622,7 @@ function ScheduleContent() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <DatabaseStatusBadge />
             {currentSolution && (
               <Button
                 variant="secondary"
@@ -739,6 +764,8 @@ function ScheduleContent() {
           )}
         </div>
       </div>
+
+      <DisruptionControl onDisruptionApplied={handleRunSolver} />
 
       {/* 2. PRE-CALCULATION EMPTY STATE: If no verified CP-SAT calculation exists, master scheduler renders nothing */}
       {!currentSolution ? (

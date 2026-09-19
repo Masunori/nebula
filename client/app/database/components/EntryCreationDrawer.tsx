@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from "react";
 import { X, PlusCircle, Train, ShieldCheck, ShieldAlert, Sparkles, Navigation, Zap } from "lucide-react";
 import type { Activity, Contract, Station, BufferRule, TrackBound } from "@/lib/types";
-import { DESIGN_TOKENS } from "@/lib/design-tokens";
 
 interface EntryCreationDrawerProps {
   isOpen: boolean;
@@ -32,11 +31,18 @@ export function EntryCreationDrawer({
   const [stationFrom, setStationFrom] = useState<string>("S01");
   const [stationTo, setStationTo] = useState<string>("S02");
   const [activityType, setActivityType] = useState<string>("Maintenance");
-  const [priority, setPriority] = useState<number>(1); // Default to P1 for urgent maintainer use case!
+  const [priority, setPriority] = useState<number>(1); // Default to P1 for urgent maintainer use case
   const [natureOfWorks, setNatureOfWorks] = useState<string>("Live");
   const [totalAccesses, setTotalAccesses] = useState<number>(3);
   const [plannedStartDate, setPlannedStartDate] = useState<string>("2027-02-01");
   const [predecessorId, setPredecessorId] = useState<string>("");
+
+  // Unique line codes present in stations
+  const availableLines = useMemo(() => {
+    const linesSet = new Set<string>();
+    stations.forEach((s) => linesSet.add(s.line_code));
+    return Array.from(linesSet).sort();
+  }, [stations]);
 
   // Stations for selected line
   const lineStations = useMemo(() => {
@@ -105,7 +111,7 @@ export function EntryCreationDrawer({
       <div
         style={{
           width: "100%",
-          maxWidth: 500,
+          maxWidth: 540,
           backgroundColor: "var(--bg-surface)",
           borderLeft: "1px solid var(--border-default)",
           height: "100%",
@@ -113,87 +119,111 @@ export function EntryCreationDrawer({
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          padding: 24,
-          boxShadow: "var(--shadow-xl)",
+          padding: 32,
+          boxShadow: "0 25px 50px -12px rgba(15, 25, 35, 0.25)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div>
-          <div className="flex items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border-default)" }}>
-            <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-between pb-5 border-b" style={{ borderColor: "var(--border-default)" }}>
+            <div className="flex items-center gap-3">
               <div
                 style={{
-                  padding: 6,
+                  padding: 10,
                   borderRadius: "var(--radius-md)",
-                  backgroundColor: "var(--teal-50)",
+                  backgroundColor: "var(--teal-050)",
                   border: "1px solid var(--border-teal)",
                   color: "var(--teal-700)",
                 }}
               >
-                <PlusCircle size={20} />
+                <PlusCircle size={22} />
               </div>
               <div>
-                <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink-900)" }}>Create Workload Entry</h2>
-                <p style={{ fontSize: 12, color: "var(--ink-500)", marginTop: 2 }}>
+                <h2 className="text-base font-bold" style={{ color: "var(--ink-900)" }}>Create Workload Entry</h2>
+                <p className="text-xs mt-0.5" style={{ color: "var(--ink-500)" }}>
                   Add urgent maintenance or renewal activity with safety envelope validation
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="btn btn--ghost btn--icon"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               aria-label="Close drawer"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4 pt-4 text-xs">
+          <form onSubmit={handleSubmit} className="space-y-4 pt-5 text-xs">
             {/* Quick Priority Callout for Maintainers */}
-            <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/50 text-rose-200 space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-[11px] text-rose-300">
-                <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+            <div
+              className="p-3.5 rounded-xl border space-y-1"
+              style={{
+                backgroundColor: "var(--status-red-bg)",
+                borderColor: "var(--status-red-border)",
+                color: "var(--status-red)",
+              }}
+            >
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <Sparkles className="w-4 h-4 shrink-0" />
                 <span>Maintainer Fast-Track (Priority 1)</span>
               </div>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-[11px]" style={{ color: "var(--ink-700)" }}>
                 In-house track maintenance possesses the track first. Priority 1 reservations take operational precedence over commercial contracts.
               </p>
             </div>
 
             {/* Interchange Crossover Alert */}
             {touchesInterchange && natureOfWorks === "Live" && (
-              <div className="p-3 rounded-lg bg-purple-950/40 border border-purple-800/80 text-purple-200 space-y-1 animate-pulse">
-                <div className="flex items-center gap-1.5 font-bold text-[11px] text-purple-300">
-                  <Zap className="w-3.5 h-3.5 text-purple-400" />
+              <div
+                className="p-3.5 rounded-xl border space-y-1"
+                style={{
+                  backgroundColor: "#faf5ff",
+                  borderColor: "#e9d5ff",
+                  color: "#6b21a8",
+                }}
+              >
+                <div className="flex items-center gap-2 font-bold text-xs">
+                  <Zap className="w-4 h-4 shrink-0 text-purple-600" />
                   <span>Dual-Line Interchange Crossover Notice</span>
                 </div>
-                <p className="text-[11px] text-purple-200">
-                  Performing 750V Live Rail work across H01/H02 isolates traction power for <strong>both Line Alpha and Line Beta</strong> tunnels simultaneously.
+                <p className="text-[11px]" style={{ color: "var(--ink-700)" }}>
+                  Performing 750V Live Rail work across H01/H02 isolates traction power for <strong>both interchange lines</strong> simultaneously.
                 </p>
               </div>
             )}
 
             {/* Activity ID & Contract */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3.5">
               <div>
-                <label className="text-slate-300 font-medium block mb-1">Activity ID</label>
+                <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>Activity ID</label>
                 <input
                   type="text"
                   required
                   value={activityId}
                   onChange={(e) => setActivityId(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono uppercase focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  className="w-full px-3.5 py-2 rounded-lg font-mono uppercase focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                  style={{
+                    backgroundColor: "var(--bg-page)",
+                    border: "1px solid var(--border-default)",
+                    color: "var(--ink-900)",
+                  }}
                 />
               </div>
 
               <div>
-                <label className="text-slate-300 font-medium block mb-1">Associated Contract</label>
+                <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>Associated Contract</label>
                 <select
                   value={contractNumber}
                   onChange={(e) => setContractNumber(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+                  style={{
+                    backgroundColor: "var(--bg-page)",
+                    border: "1px solid var(--border-default)",
+                    color: "var(--ink-900)",
+                  }}
                 >
                   {contracts.map((c) => (
                     <option key={c.contract_number} value={c.contract_number}>
@@ -205,25 +235,38 @@ export function EntryCreationDrawer({
             </div>
 
             {/* Line & Bound */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3.5">
               <div>
-                <label className="text-slate-300 font-medium block mb-1">Railway Line</label>
+                <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>Railway Line</label>
                 <select
                   value={lineCode}
                   onChange={(e) => handleLineChange(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-cyan-400 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-lg font-mono font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+                  style={{
+                    backgroundColor: "var(--bg-page)",
+                    border: "1px solid var(--border-default)",
+                    color: "var(--teal-700)",
+                  }}
                 >
-                  <option value="ALP">Line Alpha (ALP)</option>
-                  <option value="BET">Line Beta (BET)</option>
+                  {availableLines.map((code) => (
+                    <option key={code} value={code}>
+                      Line {code}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-slate-300 font-medium block mb-1">Track Direction</label>
+                <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>Track Direction</label>
                 <select
                   value={trackBound}
                   onChange={(e) => setTrackBound(e.target.value as TrackBound)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-amber-400 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-lg font-mono font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+                  style={{
+                    backgroundColor: "var(--bg-page)",
+                    border: "1px solid var(--border-default)",
+                    color: "var(--orange-700)",
+                  }}
                 >
                   <option value="EB">Eastbound (EB)</option>
                   <option value="WB">Westbound (WB)</option>
@@ -232,13 +275,18 @@ export function EntryCreationDrawer({
             </div>
 
             {/* Stations From / To */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3.5">
               <div>
-                <label className="text-slate-300 font-medium block mb-1">Station From</label>
+                <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>Station From</label>
                 <select
                   value={stationFrom}
                   onChange={(e) => setStationFrom(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+                  style={{
+                    backgroundColor: "var(--bg-page)",
+                    border: "1px solid var(--border-default)",
+                    color: "var(--ink-900)",
+                  }}
                 >
                   {lineStations.map((st) => (
                     <option key={st.station_id} value={st.station_id}>
@@ -249,11 +297,16 @@ export function EntryCreationDrawer({
               </div>
 
               <div>
-                <label className="text-slate-300 font-medium block mb-1">Station To</label>
+                <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>Station To</label>
                 <select
                   value={stationTo}
                   onChange={(e) => setStationTo(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+                  style={{
+                    backgroundColor: "var(--bg-page)",
+                    border: "1px solid var(--border-default)",
+                    color: "var(--ink-900)",
+                  }}
                 >
                   {lineStations.map((st) => (
                     <option key={st.station_id} value={st.station_id}>
@@ -265,13 +318,18 @@ export function EntryCreationDrawer({
             </div>
 
             {/* Priority & Nature */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3.5">
               <div>
-                <label className="text-slate-300 font-medium block mb-1">Job Priority</label>
+                <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>Job Priority</label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-lg font-mono font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+                  style={{
+                    backgroundColor: "var(--bg-page)",
+                    border: "1px solid var(--border-default)",
+                    color: "var(--ink-900)",
+                  }}
                 >
                   <option value={1}>P1 (Critical / Maintenance)</option>
                   <option value={2}>P2 (Important / High)</option>
@@ -280,11 +338,16 @@ export function EntryCreationDrawer({
               </div>
 
               <div>
-                <label className="text-slate-300 font-medium block mb-1">Nature of Works</label>
+                <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>Nature of Works</label>
                 <select
                   value={natureOfWorks}
                   onChange={(e) => setNatureOfWorks(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+                  style={{
+                    backgroundColor: "var(--bg-page)",
+                    border: "1px solid var(--border-default)",
+                    color: "var(--ink-900)",
+                  }}
                 >
                   <option value="Live">Live (Requires 2-sec buffer & Opp Bound)</option>
                   <option value="Non-live (Consist)">Non-live (Consist - 1-sec buffer)</option>
@@ -294,9 +357,9 @@ export function EntryCreationDrawer({
             </div>
 
             {/* Total Accesses & Start Date */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3.5">
               <div>
-                <label className="text-slate-300 font-medium block mb-1">Total Nights Required</label>
+                <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>Total Nights Required</label>
                 <input
                   type="number"
                   min={1}
@@ -304,31 +367,46 @@ export function EntryCreationDrawer({
                   required
                   value={totalAccesses}
                   onChange={(e) => setTotalAccesses(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-cyan-400 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  className="w-full px-3.5 py-2 rounded-lg font-mono font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                  style={{
+                    backgroundColor: "var(--bg-page)",
+                    border: "1px solid var(--border-default)",
+                    color: "var(--teal-700)",
+                  }}
                 />
               </div>
 
               <div>
-                <label className="text-slate-300 font-medium block mb-1">Earliest Start Date</label>
+                <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>Earliest Start Date</label>
                 <input
                   type="date"
                   required
                   value={plannedStartDate}
                   onChange={(e) => setPlannedStartDate(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  className="w-full px-3.5 py-2 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                  style={{
+                    backgroundColor: "var(--bg-page)",
+                    border: "1px solid var(--border-default)",
+                    color: "var(--ink-900)",
+                  }}
                 />
               </div>
             </div>
 
             {/* Predecessor Activity */}
             <div>
-              <label className="text-slate-300 font-medium block mb-1">
+              <label className="font-semibold block mb-1" style={{ color: "var(--ink-700)" }}>
                 Predecessor Activity ID (Optional)
               </label>
               <select
                 value={predecessorId}
                 onChange={(e) => setPredecessorId(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                className="w-full px-3.5 py-2 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+                style={{
+                  backgroundColor: "var(--bg-page)",
+                  border: "1px solid var(--border-default)",
+                  color: "var(--ink-900)",
+                }}
               >
                 <option value="">None (Independent Root Activity)</option>
                 {existingActivities.map((a) => (
@@ -342,32 +420,37 @@ export function EntryCreationDrawer({
             {/* Calculated Safety Footprint Preview */}
             <div
               style={{
-                padding: 12,
-                borderRadius: "var(--radius-md)",
+                padding: 16,
+                borderRadius: "var(--radius-lg)",
                 backgroundColor: "var(--bg-muted)",
                 border: "1px solid var(--border-default)",
               }}
-              className="space-y-2"
+              className="space-y-2.5"
             >
-              <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: "var(--ink-500)", display: "block" }}>
+              <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: "var(--ink-500)" }}>
                 Calculated Safety Footprint
               </span>
-              <div className="flex items-center justify-between font-mono text-[11px]" style={{ color: "var(--ink-700)" }}>
+              <div className="flex items-center justify-between font-mono text-xs" style={{ color: "var(--ink-700)" }}>
                 <span>Buffer Margin:</span>
-                <span style={{ color: "var(--orange-500)", fontWeight: 700 }}>
+                <span className="font-bold" style={{ color: "var(--orange-700)" }}>
                   {activeBufferRule.buffer_sectors} Sector(s) ({activeBufferRule.buffer_sectors * 1000}m)
                 </span>
               </div>
-              <div className="flex items-center justify-between font-mono text-[11px]" style={{ color: "var(--ink-700)" }}>
+              <div className="flex items-center justify-between font-mono text-xs" style={{ color: "var(--ink-700)" }}>
                 <span>Opposite Track Isolation:</span>
-                <span style={{ color: activeBufferRule.requires_opposite_bound ? "var(--status-red)" : "var(--status-green)", fontWeight: 700 }}>
+                <span
+                  className="font-bold"
+                  style={{
+                    color: activeBufferRule.requires_opposite_bound ? "var(--status-red)" : "var(--status-green)",
+                  }}
+                >
                   {activeBufferRule.requires_opposite_bound ? "Enforced (750V Live Rail Cutoff)" : "Not Required"}
                 </span>
               </div>
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t" style={{ borderColor: "var(--border-default)" }}>
+            <div className="flex items-center justify-end gap-3 pt-5 border-t" style={{ borderColor: "var(--border-default)" }}>
               <button
                 type="button"
                 onClick={onClose}
@@ -378,7 +461,7 @@ export function EntryCreationDrawer({
               <button
                 type="submit"
                 className="btn btn--primary"
-                style={{ gap: 6 }}
+                style={{ gap: 8, padding: "10px 20px" }}
               >
                 <PlusCircle size={16} />
                 <span>Stage Activity to Draft</span>

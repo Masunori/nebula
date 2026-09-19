@@ -24,6 +24,7 @@ export interface Sector {
   from_station_id: string;
   to_station_id: string;
   length_meters: number;
+  seq_order?: number;
   from_coord?: number;
   to_coord?: number;
   supply_capacity?: number;
@@ -55,12 +56,21 @@ export interface Contract {
   contract_number: string;
   contractor_name: string;
   description: string;
+  contract_description?: string;
+  contract_award_date?: string;
   line_code: string;
   priority: number;
+  contract_priority?: number;
   max_workfronts: number;
+  number_of_workfronts?: number;
   max_access_per_week: number;
+  number_of_maximum_access_per_week?: number;
   planned_completion_date: string;
+  contract_completion_date?: string;
   activity_count?: number;
+  activity_type?: string;
+  nature_of_activity?: string;
+  access_type?: string;
 }
 
 export interface Activity {
@@ -69,6 +79,7 @@ export interface Activity {
   line_code: string;
   activity_type: string;
   priority: number;
+  activity_priority?: number;
   nature_of_works: string;
   station_from: string;
   station_to: string;
@@ -76,6 +87,8 @@ export interface Activity {
   total_accesses: number;
   planned_start_date: string;
   predecessor_activity_id: string | null;
+  start_location_id?: string;
+  end_location_id?: string;
   start_coord?: number;
   end_coord?: number;
   buffer_sectors?: number;
@@ -131,6 +144,7 @@ export interface DatabaseOverview {
   dataset_name: string;
   dataset_source: string;
   lines_count: number;
+  line_count?: number;
   stations_count: number;
   sectors_count: number;
   contracts_count: number;

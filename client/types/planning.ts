@@ -56,6 +56,7 @@ export interface PlanningRun {
   revisionType: RevisionType;
   validationState: ValidationState;
   objectiveScore: number | null;
+  penaltyScore?: number | null;
   hardViolationCount: number;
   createdBy: User; // TODO: will come from auth context
   updatedBy: User; // TODO: will come from auth context

@@ -419,6 +419,9 @@ export function useDatabaseStore() {
       let totalUpdated = 0;
       const updatedTables: string[] = [];
       const errors: string[] = [];
+      const batchPayload: Record<string, any[]> = {};
+
+      const parsedItems: Array<{ table: string; records: any[]; filename: string }> = [];
 
       for (const file of fileArray) {
         try {
@@ -428,34 +431,59 @@ export function useDatabaseStore() {
             errors.push(parsed.error || `Could not parse ${file.name}`);
             continue;
           }
-
-          // Update local state dynamically
-          setState((prev) => {
-            const next = { ...prev };
-            if (parsed.table === "lines") next.lines = parsed.records as Line[];
-            else if (parsed.table === "stations") next.stations = parsed.records as Station[];
-            else if (parsed.table === "sectors") next.sectors = parsed.records as Sector[];
-            else if (parsed.table === "locationSupply") next.locationSupply = parsed.records as LocationSupply[];
-            else if (parsed.table === "bufferRules") next.bufferRules = parsed.records as BufferRule[];
-            else if (parsed.table === "parameters") next.parameters = parsed.records as SystemParameter[];
-            else if (parsed.table === "contracts") next.contracts = parsed.records as Contract[];
-            else if (parsed.table === "activities") next.activities = parsed.records as Activity[];
-            next.datasetName = `Custom Ingestion (${file.name})`;
-            return next;
-          });
-
-          // Persist to API
-          await fetch("/api/database/ingest", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ table: parsed.table, records: parsed.records }),
-          });
-
+          parsedItems.push({ table: parsed.table, records: parsed.records, filename: file.name });
           totalUpdated += parsed.records.length;
           updatedTables.push(`${parsed.table} (${parsed.records.length})`);
         } catch (err: any) {
           errors.push(`Error reading ${file.name}: ${err.message}`);
         }
+      }
+
+      if (parsedItems.length === 0) {
+        return { count: 0, tables: [], errors };
+      }
+
+      // Update state in single batch
+      setState((prev) => {
+        const next = { ...prev };
+        for (const item of parsedItems) {
+          if (item.table === "lines") next.lines = item.records as Line[];
+          else if (item.table === "stations") next.stations = item.records as Station[];
+          else if (item.table === "sectors") next.sectors = item.records as Sector[];
+          else if (item.table === "location_supply" || item.table === "locationSupply") next.locationSupply = item.records as LocationSupply[];
+          else if (item.table === "buffer_rules" || item.table === "bufferRules") next.bufferRules = item.records as BufferRule[];
+          else if (item.table === "parameters") next.parameters = item.records as SystemParameter[];
+          else if (item.table === "contracts") next.contracts = item.records as Contract[];
+          else if (item.table === "activities") next.activities = item.records as Activity[];
+        }
+        next.datasetName = `Custom Ingestion (${parsedItems.length} tables)`;
+
+        // Prepare full atomic sync payload using new records or existing state
+        batchPayload.lines = next.lines;
+        batchPayload.stations = next.stations;
+        batchPayload.sectors = next.sectors;
+        batchPayload.location_supply = next.locationSupply;
+        batchPayload.buffer_rules = next.bufferRules;
+        batchPayload.parameters = next.parameters;
+        batchPayload.contracts = next.contracts;
+        batchPayload.activities = next.activities;
+
+        return next;
+      });
+
+      // Persist atomically to PostgreSQL
+      try {
+        const syncRes = await fetch("/api/database/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(batchPayload),
+        });
+        if (!syncRes.ok) {
+          const errText = await syncRes.text();
+          errors.push(`Database sync failed: ${errText}`);
+        }
+      } catch (syncErr: any) {
+        errors.push(`Database sync error: ${syncErr.message}`);
       }
 
       invalidateScheduleCache();
