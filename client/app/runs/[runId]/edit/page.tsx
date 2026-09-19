@@ -34,10 +34,10 @@ export default function DraftEditPage() {
 
   const handleApprove = async () => {
     setApproving(true);
-    await approveDraft(runId);
+    const approvedRun = await approveDraft(runId);
     setApproving(false);
     setShowApproveModal(false);
-    router.push(`/runs/${runId}`);
+    router.push(`/runs/${approvedRun.runId}`);
   };
 
   if (!run || !valResult) return <LoadingSpinner />;
