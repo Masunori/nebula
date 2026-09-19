@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import type { TimetableRow } from '@/types/planning';
 import { DispatchTable } from './DispatchTable';
 import { GanttTimeline } from './GanttTimeline';
-import { GripVertical } from 'lucide-react';
+import { CalendarDays, GripVertical, Lock } from 'lucide-react';
 
 interface TimetableViewProps {
   rows: TimetableRow[];
@@ -38,8 +38,14 @@ export function TimetableView({ rows, highlightCellKey, onSelectActivity, editab
           {rows.length} row{rows.length !== 1 ? 's' : ''}
         </span>
         {editable && (
-          <span className="edit-mode-notice"><GripVertical size={14} /> Drag activities to a new week or location</span>
+          <span className="edit-mode-notice"><GripVertical size={14} /> Work blocks can move; closure markers update automatically</span>
         )}
+      </div>
+      <div className="timetable-legend" aria-label="Timetable legend">
+        <span className="legend-item"><span className="legend-swatch legend-swatch--renewal" aria-hidden /> Renewal work</span>
+        <span className="legend-item"><span className="legend-swatch legend-swatch--construction" aria-hidden /> Construction work</span>
+        <span className="legend-item"><span className="legend-swatch legend-swatch--closure" aria-hidden><Lock size={10} /></span> Generated closure</span>
+        <span className="legend-item legend-cw"><CalendarDays size={13} /> CW = calendar week</span>
       </div>
       <div>
         {view === 'timeline'

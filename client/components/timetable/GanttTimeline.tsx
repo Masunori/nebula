@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import type { TimetableRow, LineCode, Bound } from '@/types/planning';
+import { Lock } from 'lucide-react';
 
 interface GanttTimelineProps {
   rows: TimetableRow[];
@@ -129,13 +130,13 @@ export function GanttTimeline({ rows, highlightCellKey, onSelectActivity, editab
               <React.Fragment key={gk}>
                 {/* Group header row */}
                 <tr>
-                  <td className="location-cell group-header" colSpan={31}>
+                  <td className="location-cell group-header">
                     {line} — {bound}
                   </td>
+                  {WEEKS.map(week => <td key={week} className="group-divider" />)}
                 </tr>
                 {locs.map(loc => {
                   const weekMap = locMap.get(loc)!;
-                  const isInterchange = loc.includes('H01_H02');
                   return (
                     <tr key={loc}>
                       <td className="location-cell" title={loc}>
@@ -146,12 +147,19 @@ export function GanttTimeline({ rows, highlightCellKey, onSelectActivity, editab
                         const cellKey = acts[0] ? `${acts[0].activityId}:${w}:${loc}` : null;
                         const isHl = cellKey === highlightCellKey;
                         const cellClassName = [
-                              isInterchange ? 'hotspot' : '',
                               isHl ? 'row--highlight' : '',
                             ].filter(Boolean).join(' ');
                         const blocks = acts.map((act, idx) => (
                           editable && !act.isDerived ? (
                             <DraggableActivity key={`${act.activityId}-${idx}`} activity={act} onSelectActivity={onSelectActivity} />
+                          ) : act.isDerived ? (
+                            <div
+                              key={`${act.activityId}-${idx}`}
+                              className="gantt-block gantt-block--derived dnd-locked"
+                              title="Generated closure. It updates automatically when its linked work activity moves."
+                            >
+                              <Lock size={10} aria-hidden /> Closure
+                            </div>
                           ) : (
                             <div
                               key={`${act.activityId}-${idx}`}
